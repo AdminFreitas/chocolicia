@@ -1,0 +1,1 @@
+ALTER TABLE "s3_files" ADD COLUMN "alt" varchar(180) NOT NULL;
