@@ -3,13 +3,16 @@ import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 
 const neonUrl = process.env.NEON_DATABASE_URL ?? process.env.DATABASE_URL;
+const hasNeon =
+  Boolean(neonUrl) &&
+  (neonUrl!.includes("neon.tech") || neonUrl!.includes("neon.database"));
 const hasS3 =
   Boolean(process.env.AWS_ENDPOINT_URL_S3) &&
   Boolean(process.env.AWS_ACCESS_KEY_ID) &&
   Boolean(process.env.AWS_SECRET_ACCESS_KEY);
 
 describe("external integration credentials", () => {
-  it.skipIf(!neonUrl)("connects to Neon with SELECT 1", async () => {
+  it.skipIf(!hasNeon)("connects to Neon with SELECT 1", async () => {
     const sql = postgres(neonUrl!, { max: 1, prepare: false, connect_timeout: 15 });
     try {
       const result = await sql`SELECT 1 AS ok`;

@@ -37,7 +37,9 @@ Abra **http://localhost:3000/** (ou a porta exibida no terminal se a 3000 estive
 | `pnpm start`   | Produção local (após `pnpm build`) |
 | `pnpm test`    | Testes unitários                   |
 | `pnpm check`   | Verificação TypeScript             |
-| `pnpm db:push` | Migrações Drizzle (requer Neon)    |
+| `pnpm db:generate` | Gera SQL se o schema mudou      |
+| `pnpm db:migrate` | Aplica migrações no Neon         |
+| `pnpm db:push` | `db:generate` + `db:migrate`       |
 
 ## Variáveis de ambiente
 
@@ -57,6 +59,17 @@ Copie `.env.example` para `.env` e configure:
 | `PORT` | Não | Porta do servidor (padrão `3000`) |
 
 Sem `ADMIN_PASSWORD` ou `JWT_SECRET`, o login administrativo **não** funciona (comportamento intencional).
+
+### Banco (Neon)
+
+Com `.env` configurado:
+
+```bash
+pnpm db:migrate
+pnpm exec tsx scripts/db-smoke.mts
+```
+
+O script de smoke lista tabelas, insere um orçamento de teste e remove em seguida.
 
 ## Deploy na Vercel
 

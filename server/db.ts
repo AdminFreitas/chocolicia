@@ -1,20 +1,37 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres, { type Options } from "postgres";
 import { InsertOrder, InsertUser, Order, orders, s3Files, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _sql: ReturnType<typeof postgres> | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 
+function resolveDatabaseUrl(): string | undefined {
+  return ENV.neonDatabaseUrl || ENV.databaseUrl || undefined;
+}
+
+function buildPostgresOptions(connectionString: string): Options<Record<string, never>> {
+  const isNeon = connectionString.includes("neon.tech");
+
+  return {
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 15,
+    prepare: false,
+    ssl: isNeon ? "require" : undefined,
+  };
+}
+
 export async function getDb() {
-  const connectionString = ENV.neonDatabaseUrl || ENV.databaseUrl;
+  const connectionString = resolveDatabaseUrl();
   if (!_db && connectionString) {
     try {
-      _sql = postgres(connectionString, { max: 5, prepare: false });
+      _sql = postgres(connectionString, buildPostgresOptions(connectionString));
       _db = drizzle(_sql);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
+      _sql = null;
       _db = null;
     }
   }

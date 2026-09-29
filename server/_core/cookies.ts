@@ -9,10 +9,11 @@ export function isSecureRequest(req: Request) {
 }
 
 export function getSessionCookieOptions(req: Request) {
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none" as const,
-    secure: isSecureRequest(req)
+    sameSite: "lax" as const,
+    secure,
   };
 }

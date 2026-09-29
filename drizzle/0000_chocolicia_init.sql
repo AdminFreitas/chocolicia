@@ -1,8 +1,21 @@
 CREATE TYPE "public"."user_role" AS ENUM('user', 'admin');--> statement-breakpoint
+CREATE TABLE "orders" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(160) NOT NULL,
+	"event_type" varchar(120) NOT NULL,
+	"guests" varchar(80) NOT NULL,
+	"desired_date" varchar(32),
+	"category" varchar(120) NOT NULL,
+	"details" text,
+	"status" varchar(32) DEFAULT 'new' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "s3_files" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"object_key" text NOT NULL,
 	"file_url" text NOT NULL,
+	"alt" varchar(180) NOT NULL,
 	"content_type" varchar(255),
 	"user_id" varchar(128),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
