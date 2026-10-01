@@ -1,0 +1,16 @@
+{
+  "name": "Chocolícia – Arte dos Doces e Buffet",
+  "short_name": "Chocolícia",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF9F0",
+  "theme_color": "#FFF9F0",
+  "icons": [
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

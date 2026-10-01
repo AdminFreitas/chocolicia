@@ -4,6 +4,10 @@ import BorderGlow from "../components/BorderGlow";
 import { CatalogGallery, CatalogManager } from "../components/CatalogManager";
 import Dock from "../components/Dock";
 import FlipCard from "../components/FlipCard";
+import { SITE, WA_ORCAMENTO, WA_SAUDACAO, waLink, waProduct } from "@/config/site";
+import { trackEvent } from "@/lib/analytics";
+import { BakerySchema, PageMeta, WebSiteSchema } from "@/seo/JsonLd";
+import { getRouteMeta } from "@/seo/routeMeta";
 import { trpc } from "../lib/trpc";
 // @ts-expect-error React Bits ships this visual component as JavaScript.
 import TechText from "../components/TechText.jsx";
@@ -18,16 +22,15 @@ const boloBorboletas = "/images/bolo-borboletas.webp";
 const boloAniversario = "/images/bolo-aniversario.webp";
 const brigadeiros = "/images/brigadeiros.webp";
 
-const WHATSAPP_NUMBER = "5521977359379";
-const whatsapp = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá, Chocolícia! Gostaria de solicitar um orçamento.")}`;
-const whatsappGreeting = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá, Chocolícia! Tudo bem? Gostaria de conhecer melhor o trabalho de vocês.")}`;
-const productWhatsApp = (product: string) =>
-  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Olá! Tenho interesse em ${product}. Poderia me enviar mais informações?`)}`;
-const instagram = "https://www.instagram.com/janinegoncalves22/";
-const facebook = "https://www.facebook.com/janine.goncalves.2025";
-const tiktok = "https://www.tiktok.com/@janinegoncalves22";
-const officialEmail = "chocoliciaartedosdoces@gmai.com";
-const googleBusiness = "https://share.google/goyPUsqdHSK9p1cVc";
+const homeMeta = getRouteMeta("/");
+const whatsapp = WA_ORCAMENTO;
+const whatsappGreeting = WA_SAUDACAO;
+const productWhatsApp = waProduct;
+const instagram = SITE.instagram;
+const facebook = SITE.facebook;
+const tiktok = SITE.tiktok;
+const officialEmail = SITE.email;
+const googleBusiness = SITE.googleBusiness;
 
 type UmamiAnalytics = {
   track: (eventName: string, properties?: Record<string, string>) => void;
@@ -36,11 +39,7 @@ type UmamiAnalytics = {
 type GoogleTag = (command: "event", eventName: string, parameters?: Record<string, string>) => void;
 
 function trackAnalytics(eventName: string, properties: Record<string, string>) {
-  if (typeof window === "undefined") return;
-  const umami = (window as Window & { umami?: UmamiAnalytics }).umami;
-  umami?.track(eventName, properties);
-  const gtag = (window as Window & { gtag?: GoogleTag }).gtag;
-  gtag?.("event", eventName, { ...properties, page_location: window.location.href });
+  trackEvent(eventName, properties);
 }
 
 const photos = {
@@ -82,12 +81,7 @@ type GoogleReview = {
   sourceUrl: string;
 };
 
-// Conteúdo demonstrativo temporário. Substituir pelos dados do Google Meu Negócio quando conectado.
-const googleReviews: GoogleReview[] = [
-  { name: "Amostra · Cliente 01", text: "Os doces chegaram lindos, delicados e com um sabor inesquecível. Tudo foi preparado com muito carinho.", rating: 5, date: "Data da avaliação a inserir", response: "Resposta de exemplo: agradecemos por escolher a Chocolícia e por compartilhar sua experiência!", sourceUrl: googleBusiness },
-  { name: "Amostra · Cliente 02", text: "O bolo ficou exatamente como imaginávamos e deixou nossa comemoração ainda mais especial.", rating: 5, date: "Data da avaliação a inserir", response: "Resposta de exemplo: foi um prazer adoçar esse momento tão especial. Muito obrigada pelo carinho!", sourceUrl: googleBusiness },
-  { name: "Amostra · Cliente 03", text: "Atendimento atencioso, capricho em cada detalhe e uma mesa de doces que encantou todos os convidados.", rating: 5, date: "Data da avaliação a inserir", response: "Resposta de exemplo: ficamos felizes em saber que cada detalhe tornou a sua celebração ainda mais doce!", sourceUrl: googleBusiness },
-];
+const googleReviews: GoogleReview[] = [];
 
 function Icon({ name, className = "h-5 w-5" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
@@ -142,11 +136,12 @@ function Carousel({
 
 function FAQSection() {
   const faqs = [
-    ["A Chocolícia faz entregas?", "Sim. Fazemos entregas sob consulta, de acordo com o endereço, o tipo de pedido e a disponibilidade da agenda. A taxa é calculada separadamente e informada antes da confirmação do orçamento."],
-    ["Como funciona a taxa de entrega?", "A taxa varia conforme a região e o tamanho da encomenda. Envie seu endereço pelo WhatsApp para receber o valor exato junto com o orçamento, sem surpresas."],
-    ["Com quanto tempo devo fazer meu pedido?", "Para bolos e doces personalizados, recomendamos solicitar com pelo menos 7 dias de antecedência. Para buffet, festas e pedidos maiores, o ideal é reservar a data com 15 a 30 dias de antecedência."],
-    ["Consigo fazer um pedido de última hora?", "Sempre que houver disponibilidade, sim. Fale com a gente pelo WhatsApp e verificaremos as opções possíveis para a sua data, sabores e quantidade."],
-    ["O prazo de produção começa após o pagamento?", "A data só fica reservada após a confirmação do pedido e do pagamento combinado. Depois disso, enviamos todos os detalhes de retirada ou entrega."],
+    ["Quais serviços a Chocolícia oferece?", "A Chocolícia trabalha com doces artesanais, bolos personalizados e buffet para festas e eventos."],
+    ["Onde fica a base da Chocolícia?", "A base da Chocolícia fica em Niterói, no estado do Rio de Janeiro."],
+    ["Quais regiões são atendidas?", "Além de Niterói, a Chocolícia atende São Gonçalo, Maricá, Itaboraí e outras cidades do estado do Rio de Janeiro. Consulte sua cidade."],
+    ["Como peço um orçamento?", "Entre em contato pelo WhatsApp, telefone ou formulário desta página e conte o que está planejando."],
+    ["Como conhecer o trabalho da Chocolícia?", "Veja as imagens desta página e acesse o Instagram da Chocolícia para conhecer outros trabalhos."],
+    ["Como saber quais opções estão disponíveis?", "Envie sua ideia e os detalhes da comemoração pelos canais de contato para conversar sobre as opções."],
   ];
   return (
     <section id="faq" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-5 py-24 md:py-36 lg:px-8">
@@ -246,7 +241,8 @@ function QuoteSection() {
     } catch {
       setSaveError(true);
     }
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    trackEvent("form_submit", { placement: "quote_form" });
+    window.open(waLink(message), "_blank", "noopener,noreferrer");
     setSent(true);
   };
 
@@ -281,7 +277,7 @@ function QuoteSection() {
           </div>
           <button type="submit" disabled={createOrder.isPending} className="button-gold button-primary mt-7 w-full">{createOrder.isPending ? "Salvando pedido…" : "Enviar resumo pelo WhatsApp"}</button>
           {saveError && <p className="mt-3 text-center text-xs leading-5 text-[#8A5A44]" role="status">O WhatsApp foi aberto, mas não conseguimos salvar o pedido no momento.</p>}
-          <p className="mt-4 text-center text-xs leading-5 text-[#8A5A44]">Você será direcionado para o WhatsApp com todos os dados preenchidos.</p>
+              <p className="mt-4 text-center text-xs leading-5 text-[#8A5A44]">Você será direcionado para o WhatsApp com os dados preenchidos.</p>
         </form>
         )}
       </div>
@@ -320,6 +316,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FFF9F0] text-[#5A3428]">
+      <PageMeta meta={homeMeta} />
+      <BakerySchema />
+      <WebSiteSchema />
+
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[#5A3428]/10 bg-[#FFF9F0]/95 backdrop-blur-md">
         <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-5 lg:h-20 lg:px-8">
           <a href="#inicio" className="brand-lockup flex items-center gap-3" aria-label="Chocolícia - início">
@@ -353,7 +353,7 @@ export default function Home() {
                 <p className="eyebrow">Doces artesanais & buffet</p>
                 <span className="premium-badge">Feito à mão, com carinho</span>
               </div>
-              <h1 className="sr-only">Chocolícia</h1>
+              <h1 className="font-display text-3xl leading-tight text-[#5A3428] md:text-4xl">Doces, bolos e buffet para festas em Niterói e região</h1>
               <div className="tech-title" aria-hidden="true">
                 <TechText
                   text="Chocolícia"
@@ -391,7 +391,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2"><i className="h-1 w-1 rounded-full bg-[#D9A83E]" /> Feito sob encomenda</span>
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:gap-6">
+                    <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:gap-6">
               <div className="image-card h-[25rem] md:h-[38rem]">
                 <img src={photos.hero} alt="Bolo de aniversário artesanal da Chocolícia" className="h-full w-full object-cover" />
                 <span className="photo-label">Feito para celebrar</span>
@@ -544,7 +544,19 @@ export default function Home() {
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <ReviewsSection />
+        <section id="servicos" className="bg-[#F3E5D0]/65 px-5 py-20 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <p className="eyebrow mb-3">Chocolícia em Niterói e no RJ</p>
+            <h2 className="section-title">Doces, bolos e buffet para sua comemoração</h2>
+            <p className="mt-5 max-w-3xl leading-7 text-[#8A5A44]">Nossa base fica em Niterói e atendemos também São Gonçalo, Maricá, Itaboraí e outras cidades do estado do Rio de Janeiro. Para conversar sobre uma encomenda ou evento, fale conosco pelo WhatsApp, telefone ou formulário.</p>
+            <nav aria-label="Serviços e áreas atendidas" className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
+              <a href="/buffet-para-festas" className="text-cta">Buffet para festas</a>
+              <a href="/bolos-personalizados" className="text-cta">Bolos personalizados</a>
+              <a href="/doces-para-festas" className="text-cta">Doces para festas</a>
+              <a href="/areas-atendidas" className="text-cta">Áreas atendidas</a>
+            </nav>
+          </div>
+        </section>
 
         <FAQSection />
 
@@ -555,10 +567,10 @@ export default function Home() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[.26em] text-[#D9A83E]">Fale com a gente</p>
             <h2 className="font-display text-5xl leading-tight md:text-8xl">Vamos adoçar o seu momento?</h2>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-[#FFF9F0]/70">Conte sua ideia para nós. Será um prazer criar algo único para a sua celebração.</p>
-            <p className="mt-5 font-display text-xl italic text-[#F3CD73]">Datas para eventos são limitadas — garanta a sua.</p>
             <a href="#orcamento" className="button-gold button-final mt-9 text-sm">Solicitar orçamento</a>
             <div className="mt-6"><a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "contact_catalog" })} className="text-sm text-[#FFF9F0]/70 underline decoration-[#D9A83E]/70 underline-offset-4 transition hover:text-[#FFF9F0]">Prefere ver nosso catálogo completo? Chame no WhatsApp</a></div>
             <div className="mt-7 flex flex-col items-center gap-3 text-sm text-[#FFF9F0]/70 sm:flex-row sm:justify-center sm:gap-6">
+              <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "home_contact" })} className="transition hover:text-[#FFF9F0]">{SITE.whatsappDisplay}</a>
               <a href={`mailto:${officialEmail}`} className="transition hover:text-[#FFF9F0]">{officialEmail}</a>
             </div>
           </div>
@@ -579,6 +591,8 @@ export default function Home() {
           </nav>
           <div className="site-footer-contact">
             <p className="footer-kicker">Contato</p>
+            <p>Niterói, Rio de Janeiro</p>
+            <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "home_footer" })}>{SITE.whatsappDisplay}</a>
             <a href={`mailto:${officialEmail}`}>{officialEmail}</a>
           </div>
           <div className="site-footer-social">
@@ -598,6 +612,9 @@ export default function Home() {
         { icon: <Music2 size={18} />, label: "TikTok", onClick: () => { trackAnalytics("tiktok_click", { placement: "dock" }); window.open(tiktok, "_blank", "noopener,noreferrer"); } },
         { icon: <MessageCircle size={18} />, label: "Contato", onClick: () => document.getElementById("contato")?.scrollIntoView({ behavior: "smooth" }) },
       ]} panelHeight={68} baseItemSize={48} magnification={64} />
+      <a href={whatsapp} target="_blank" rel="noreferrer" aria-label="Solicitar orçamento pelo WhatsApp" onClick={() => trackEvent("whatsapp_click", { placement: "floating_button" })} className="fixed bottom-24 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-xl lg:bottom-8 lg:right-8">
+        <MessageCircle className="h-7 w-7" aria-hidden="true" />
+      </a>
       {lightbox && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-[#3A241D]/95 p-4" role="dialog" aria-modal="true" aria-label={lightbox[1]} onClick={() => setLightbox(null)}>
           <button onClick={() => setLightbox(null)} className="absolute right-5 top-5 grid h-12 w-12 place-items-center rounded-full bg-white/10 text-white" aria-label="Fechar imagem"><Icon name="close" /></button>

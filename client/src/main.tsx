@@ -1,20 +1,25 @@
 import { trpc } from "@/lib/trpc";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  type MutationCacheNotifyEvent,
+  type QueryCacheNotifyEvent,
+} from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
 
 const queryClient = new QueryClient();
 
-queryClient.getQueryCache().subscribe((event) => {
+queryClient.getQueryCache().subscribe((event: QueryCacheNotifyEvent) => {
   if (event.type === "updated" && event.action.type === "error") {
     console.error("[API Query Error]", event.query.state.error);
   }
 });
 
-queryClient.getMutationCache().subscribe((event) => {
+queryClient.getMutationCache().subscribe((event: MutationCacheNotifyEvent) => {
   if (event.type === "updated" && event.action.type === "error") {
     console.error("[API Mutation Error]", event.mutation.state.error);
   }
@@ -35,10 +40,19 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root")!;
+const app = (
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-  </trpc.Provider>,
+  </trpc.Provider>
 );
+
+// Se houver HTML pré-renderizado no root, usa hydrateRoot para não piscar a tela.
+// Em desenvolvimento (vite dev), o root estará vazio → createRoot normal.
+if (rootElement.hasChildNodes()) {
+  hydrateRoot(rootElement, app);
+} else {
+  createRoot(rootElement).render(app);
+}

@@ -2,7 +2,7 @@ import { loginWithPassword } from "@/const";
 import { trpc } from "@/lib/trpc";
 
 export function useAuth() {
-  const meQuery = trpc.auth.me.useQuery();
+  const meQuery = trpc.auth.me.useQuery(undefined);
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.reload();

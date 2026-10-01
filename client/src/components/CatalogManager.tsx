@@ -1,7 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { STATIC_CATALOG_IMAGES } from "@/data/staticCatalogFallback";
 import { trpc } from "@/lib/trpc";
 import { ImagePlus, Loader2, LockKeyhole, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
+
+const isPrerender = typeof window === "undefined";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -9,9 +12,33 @@ type CatalogGalleryProps = {
   compact?: boolean;
 };
 
+type CatalogImage = {
+  id: number;
+  url: string;
+  alt: string;
+  objectKey: string;
+  fileUrl: string;
+  contentType: string | null;
+  userId: string | null;
+  createdAt: Date;
+};
+
+const staticCatalogFallback: CatalogImage[] = STATIC_CATALOG_IMAGES.map((image, index) => ({
+  id: index + 1,
+  url: image.url,
+  alt: image.alt,
+  objectKey: `static/${image.id}`,
+  fileUrl: image.url,
+  contentType: "image/webp",
+  userId: null,
+  createdAt: new Date(0),
+}));
+
 export function CatalogGallery({ compact = false }: CatalogGalleryProps) {
-  const query = trpc.catalog.list.useQuery();
-  const images = query.data ?? [];
+  const query = trpc.catalog.list.useQuery(undefined, {
+    initialData: isPrerender ? staticCatalogFallback : undefined,
+  });
+  const images: CatalogImage[] = query.data ?? (isPrerender ? staticCatalogFallback : []);
 
   return (
     <div className={compact ? "catalog-gallery catalog-gallery-compact" : "catalog-gallery"}>
@@ -51,9 +78,12 @@ export function CatalogManager() {
       if (fileInput.current) fileInput.current.value = "";
       await utils.catalog.list.invalidate();
     },
-    onError: (error) => setNotice(error.message.includes("bucket") || error.message.includes("Bucket")
-      ? "O bucket assets ainda precisa ser criado no Neon Object Storage."
-      : "Não foi possível enviar esta imagem. Tente novamente."),
+    onError: (error: { message: string }) =>
+      setNotice(
+        error.message.includes("bucket") || error.message.includes("Bucket")
+          ? "O bucket assets ainda precisa ser criado no Neon Object Storage."
+          : "Não foi possível enviar esta imagem. Tente novamente.",
+      ),
   });
 
   if (loading) return null;
