@@ -69,7 +69,7 @@ export default function AreasAtendidas() {
       />
       <FAQSchema items={faqs} />
 
-      <header className="bg-[#3A241D] px-5 py-5 lg:px-8">
+      <header className="bg-[#3A241D] px-4 py-4 md:px-6 md:py-5 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <a href="/" className="font-display text-2xl text-[#FFF9F0]" aria-label="Chocolícia – início">
             Chocolícia
@@ -81,19 +81,19 @@ export default function AreasAtendidas() {
       </header>
 
       <main>
-        <section className="px-5 py-20 lg:px-8 lg:py-28 bg-[#F3E5D0]/50">
+        <section className="px-4 py-10 md:px-6 md:py-16 lg:px-8 lg:py-20 bg-[#F3E5D0]/50">
           <div className="mx-auto max-w-4xl">
-            <p className="eyebrow mb-4">Onde estamos</p>
+            <p className="eyebrow mb-3">Onde estamos</p>
             <h1 className="font-display text-5xl leading-[1.04] text-[#5A3428] md:text-7xl">
               Áreas Atendidas pela Chocolícia no Rio de Janeiro
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#8A5A44]">
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-[#8A5A44] md:mt-5">
               A Chocolícia tem base em Niterói e atende toda a Região Metropolitana do Rio de
               Janeiro, com destaque para Niterói, São Gonçalo, Maricá e Itaboraí. Levamos
               doces artesanais, bolos personalizados e buffet para festas e eventos em toda
               a nossa área de atuação.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
               <a
                 href={WA_ORCAMENTO}
                 target="_blank"
@@ -108,27 +108,27 @@ export default function AreasAtendidas() {
         </section>
 
         {/* Seções por cidade */}
-        <section className="px-5 py-20 lg:px-8">
-          <div className="mx-auto max-w-4xl space-y-12">
+        <section className="px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+          <div className="mx-auto max-w-4xl space-y-8">
             <h2 className="section-title">Principais regiões de atendimento</h2>
             {areas.map((area) => (
-              <div key={area.city} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-8">
-                <h3 className="font-display text-3xl text-[#5A3428] mb-4">{area.city}</h3>
-                <p className="text-[#8A5A44] leading-8">{area.text}</p>
+              <div key={area.city} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-5 md:p-6">
+                <h3 className="font-display text-3xl text-[#5A3428]">{area.city}</h3>
+                <p className="mt-2 text-[#8A5A44] leading-8">{area.text}</p>
                 <a
                   href={WA_ORCAMENTO}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => trackEvent("whatsapp_click", { placement: `areas_${area.city.toLowerCase()}` })}
-                  className="mt-6 inline-flex text-cta"
+                  className="mt-4 inline-flex text-cta"
                 >
                   Solicitar orçamento para {area.city} →
                 </a>
               </div>
             ))}
 
-            <div className="rounded-2xl bg-[#3A241D] px-8 py-10 text-[#FFF9F0]">
-              <h2 className="font-display text-3xl mb-4">Todo o Estado do Rio de Janeiro</h2>
+            <div className="rounded-2xl bg-[#3A241D] p-5 text-[#FFF9F0] md:p-6">
+              <h2 className="font-display text-3xl mb-2">Todo o Estado do Rio de Janeiro</h2>
               <p className="text-[#FFF9F0]/80 leading-7 mb-4">
                 Além das cidades acima, a Chocolícia pode atender outras regiões do estado
                 do Rio de Janeiro, dependendo da disponibilidade de agenda e das condições
@@ -144,7 +144,7 @@ export default function AreasAtendidas() {
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => trackEvent("whatsapp_click", { placement: "areas_estado_rj" })}
-                className="button-gold mt-8 inline-flex"
+                className="button-gold mt-6 inline-flex"
               >
                 Verificar atendimento na minha cidade
               </a>
@@ -152,10 +152,10 @@ export default function AreasAtendidas() {
           </div>
         </section>
 
-        <section id="faq" className="bg-[#F3E5D0]/65 px-5 py-20 lg:px-8 scroll-mt-8">
+        <section id="faq" className="bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20 scroll-mt-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="section-title mb-8">Perguntas frequentes sobre atendimento</h2>
-            <div className="space-y-2">
+            <h2 className="section-title mb-8 md:mb-10 lg:mb-12">Perguntas frequentes sobre atendimento</h2>
+            <div className="space-y-3">
               {faqs.map(({ question, answer }, i) => (
                 <details key={question} className="faq-item" open={i === 0}>
                   <summary>{question}<span aria-hidden="true">⌄</span></summary>
@@ -163,7 +163,7 @@ export default function AreasAtendidas() {
                 </details>
               ))}
             </div>
-            <div className="mt-10 text-center">
+            <div className="mt-8 text-center">
               <a
                 href={WA_ORCAMENTO}
                 target="_blank"
@@ -178,11 +178,11 @@ export default function AreasAtendidas() {
         </section>
       </main>
 
-      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-5 py-10 text-[#FFF9F0]/70 lg:px-8">
-        <div className="mx-auto max-w-7xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-24 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-12 lg:px-8">
+        <div className="mx-auto max-w-7xl flex flex-col gap-4 md:flex-row md:gap-6 md:items-center md:justify-between">
           <div>
             <p className="text-[#FFF9F0] font-semibold">{SITE.fullName}</p>
-            <p className="text-sm mt-1">{SITE.city}, {SITE.state} – Brasil</p>
+            <p className="text-sm mt-2">{SITE.city}, {SITE.state} – Brasil</p>
             <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "areas_footer" })} className="text-sm hover:text-[#FFF9F0] transition">
               {SITE.whatsappDisplay}
             </a>

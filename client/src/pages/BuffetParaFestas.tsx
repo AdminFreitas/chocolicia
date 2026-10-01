@@ -61,7 +61,7 @@ export default function BuffetParaFestas() {
       <FAQSchema items={faqs} />
 
       {/* Cabeçalho */}
-      <header className="bg-[#3A241D] px-5 py-5 lg:px-8">
+      <header className="bg-[#3A241D] px-4 py-4 md:px-6 md:py-5 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <a href="/" className="font-display text-2xl text-[#FFF9F0]" aria-label="Chocolícia – início">
             Chocolícia
@@ -74,20 +74,20 @@ export default function BuffetParaFestas() {
 
       <main>
         {/* Hero */}
-        <section className="px-5 py-20 lg:px-8 lg:py-28 bg-[#F3E5D0]/50">
+        <section className="px-4 py-10 md:px-6 md:py-16 lg:px-8 lg:py-20 bg-[#F3E5D0]/50">
           <div className="mx-auto max-w-4xl">
-            <p className="eyebrow mb-4">Buffet &amp; Eventos</p>
+            <p className="eyebrow mb-3">Buffet &amp; Eventos</p>
             <h1 className="font-display text-5xl leading-[1.04] text-[#5A3428] md:text-7xl">
               Buffet para Festas em Niterói e Região
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#8A5A44]">
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-[#8A5A44] md:mt-5">
               A Chocolícia oferece buffet artesanal completo para aniversários, festas
               infantis, festas de 15 anos e eventos corporativos em Niterói, São Gonçalo,
               Maricá, Itaboraí e toda a Região Metropolitana do Rio de Janeiro. Do conceito
               à montagem, cuidamos de cada detalhe para que a sua celebração seja
               inesquecível.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
               <a
                 href={WA_ORCAMENTO}
                 target="_blank"
@@ -105,10 +105,10 @@ export default function BuffetParaFestas() {
         </section>
 
         {/* Serviços */}
-        <section className="px-5 py-20 lg:px-8">
+        <section className="px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl">
-            <h2 className="section-title mb-8">O que oferecemos no buffet</h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <h2 className="section-title mb-8 md:mb-10 lg:mb-12">O que oferecemos no buffet</h2>
+            <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:gap-8">
               {[
                 {
                   title: "Festas de Aniversário",
@@ -135,18 +135,18 @@ export default function BuffetParaFestas() {
                   text: "Docinhos e mesas temáticas para chás de bebê e revelação, com paletas de cores e sabores combinando com a decoração do evento.",
                 },
               ].map((item) => (
-                <div key={item.title} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-7">
-                  <h3 className="font-display text-2xl text-[#5A3428] mb-3">{item.title}</h3>
-                  <p className="text-[#8A5A44] leading-7">{item.text}</p>
+                <div key={item.title} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-5 md:p-6">
+                  <h3 className="font-display text-2xl text-[#5A3428]">{item.title}</h3>
+                  <p className="mt-2 text-[#8A5A44] leading-7">{item.text}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-10 rounded-2xl bg-[#3A241D] px-8 py-10 text-[#FFF9F0]">
-              <h2 className="font-display text-3xl mb-4">
+            <div className="mt-8 rounded-2xl bg-[#3A241D] p-5 text-[#FFF9F0] md:p-6">
+              <h2 className="font-display text-3xl mb-3">
                 Como funciona o serviço de buffet
               </h2>
-              <ol className="space-y-4 text-[#FFF9F0]/80 leading-7 list-decimal list-inside">
+              <ol className="space-y-2 text-[#FFF9F0]/80 leading-7 list-decimal list-inside">
                 <li>
                   <strong>Orçamento:</strong> Você nos conta os detalhes do evento pelo
                   WhatsApp ou formulário — data, número de convidados, tipo de festa e
@@ -174,7 +174,7 @@ export default function BuffetParaFestas() {
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => trackEvent("whatsapp_click", { placement: "buffet_how_it_works" })}
-                className="button-gold mt-8 inline-flex"
+                className="button-gold mt-6 inline-flex"
               >
                 Solicitar orçamento
               </a>
@@ -183,10 +183,10 @@ export default function BuffetParaFestas() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="bg-[#F3E5D0]/65 px-5 py-20 lg:px-8 scroll-mt-8">
+        <section id="faq" className="bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20 scroll-mt-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="section-title mb-8">Perguntas frequentes sobre buffet</h2>
-            <div className="space-y-2">
+            <h2 className="section-title mb-8 md:mb-10 lg:mb-12">Perguntas frequentes sobre buffet</h2>
+            <div className="space-y-3">
               {faqs.map(({ question, answer }, i) => (
                 <details
                   key={question}
@@ -201,7 +201,7 @@ export default function BuffetParaFestas() {
                 </details>
               ))}
             </div>
-            <div className="mt-10 text-center">
+            <div className="mt-8 text-center">
               <a
                 href={WA_ORCAMENTO}
                 target="_blank"
@@ -216,11 +216,11 @@ export default function BuffetParaFestas() {
         </section>
       </main>
 
-      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-5 py-10 text-[#FFF9F0]/70 lg:px-8">
-        <div className="mx-auto max-w-7xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-24 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-12 lg:px-8">
+        <div className="mx-auto max-w-7xl flex flex-col gap-4 md:flex-row md:gap-6 md:items-center md:justify-between">
           <div>
             <p className="text-[#FFF9F0] font-semibold">{SITE.fullName}</p>
-            <p className="text-sm mt-1">{SITE.city}, {SITE.state} – Brasil</p>
+            <p className="text-sm mt-2">{SITE.city}, {SITE.state} – Brasil</p>
             <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "buffet_footer" })} className="text-sm hover:text-[#FFF9F0] transition">
               {SITE.whatsappDisplay}
             </a>

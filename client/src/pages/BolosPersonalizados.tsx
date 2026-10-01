@@ -60,7 +60,7 @@ export default function BolosPersonalizados() {
       />
       <FAQSchema items={faqs} />
 
-      <header className="bg-[#3A241D] px-5 py-5 lg:px-8">
+      <header className="bg-[#3A241D] px-4 py-4 md:px-6 md:py-5 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <a href="/" className="font-display text-2xl text-[#FFF9F0]" aria-label="Chocolícia – início">
             Chocolícia
@@ -72,20 +72,20 @@ export default function BolosPersonalizados() {
       </header>
 
       <main>
-        <section className="px-5 py-20 lg:px-8 lg:py-28 bg-[#F3E5D0]/50">
+        <section className="px-4 py-10 md:px-6 md:py-16 lg:px-8 lg:py-20 bg-[#F3E5D0]/50">
           <div className="mx-auto max-w-4xl">
-            <p className="eyebrow mb-4">Criações exclusivas</p>
+            <p className="eyebrow mb-3">Criações exclusivas</p>
             <h1 className="font-display text-5xl leading-[1.04] text-[#5A3428] md:text-7xl">
               Bolos Personalizados em Niterói
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#8A5A44]">
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-[#8A5A44] md:mt-5">
               Na Chocolícia, cada bolo é uma obra feita à mão. Criados especialmente para a
               sua celebração, nossos bolos artesanais combinam técnica de confeitaria,
               ingredientes selecionados e uma apresentação que encanta antes mesmo da
               primeira fatia. Atendemos Niterói, São Gonçalo, Maricá, Itaboraí e toda a
               Região Metropolitana do Rio de Janeiro.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
               <a
                 href={waProduct("um bolo personalizado")}
                 target="_blank"
@@ -102,10 +102,10 @@ export default function BolosPersonalizados() {
           </div>
         </section>
 
-        <section className="px-5 py-20 lg:px-8">
+        <section className="px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl">
-            <h2 className="section-title mb-8">Tipos de bolo que fazemos</h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <h2 className="section-title mb-8 md:mb-10 lg:mb-12">Tipos de bolo que fazemos</h2>
+            <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:gap-8">
               {[
                 {
                   title: "Bolos de Aniversário",
@@ -132,20 +132,20 @@ export default function BolosPersonalizados() {
                   text: "Para quem prefere um visual mais simples e elegante, oferecemos naked cakes e semi-naked cakes com frutas frescas ou flores naturais.",
                 },
               ].map((item) => (
-                <div key={item.title} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-7">
-                  <h3 className="font-display text-2xl text-[#5A3428] mb-3">{item.title}</h3>
-                  <p className="text-[#8A5A44] leading-7">{item.text}</p>
+                <div key={item.title} className="rounded-2xl border border-[#D9A83E]/30 bg-[#FFF9F0] p-5 md:p-6">
+                  <h3 className="font-display text-2xl text-[#5A3428]">{item.title}</h3>
+                  <p className="mt-2 text-[#8A5A44] leading-7">{item.text}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-10 rounded-2xl bg-[#3A241D] px-8 py-10 text-[#FFF9F0]">
-              <h2 className="font-display text-3xl mb-4">Como encomendar seu bolo</h2>
-              <p className="text-[#FFF9F0]/80 leading-7 mb-6">
+            <div className="mt-8 rounded-2xl bg-[#3A241D] p-5 text-[#FFF9F0] md:p-6">
+              <h2 className="font-display text-3xl mb-2">Como encomendar seu bolo</h2>
+              <p className="text-[#FFF9F0]/80 leading-7 mb-4">
                 O processo é simples e pensado para facilitar a sua experiência. Você nos
                 conta o que imagina e nós cuidamos do resto — da criação à entrega.
               </p>
-              <ol className="space-y-4 text-[#FFF9F0]/80 leading-7 list-decimal list-inside">
+              <ol className="space-y-2 text-[#FFF9F0]/80 leading-7 list-decimal list-inside">
                 <li><strong>Fale conosco:</strong> Envie a data do evento, o número de porções e qualquer referência de tema ou estilo.</li>
                 <li><strong>Receba o orçamento:</strong> Enviamos uma proposta com sabor, recheio, cobertura e valor.</li>
                 <li><strong>Confirme o pedido:</strong> Após aprovação e pagamento combinado, a data é reservada.</li>
@@ -157,7 +157,7 @@ export default function BolosPersonalizados() {
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => trackEvent("whatsapp_click", { placement: "bolos_cta_dark" })}
-                className="button-gold mt-8 inline-flex"
+                className="button-gold mt-6 inline-flex"
               >
                 Encomendar agora
               </a>
@@ -165,10 +165,10 @@ export default function BolosPersonalizados() {
           </div>
         </section>
 
-        <section id="faq" className="bg-[#F3E5D0]/65 px-5 py-20 lg:px-8 scroll-mt-8">
+        <section id="faq" className="bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20 scroll-mt-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="section-title mb-8">Perguntas frequentes sobre bolos</h2>
-            <div className="space-y-2">
+            <h2 className="section-title mb-8 md:mb-10 lg:mb-12">Perguntas frequentes sobre bolos</h2>
+            <div className="space-y-3">
               {faqs.map(({ question, answer }, i) => (
                 <details key={question} className="faq-item" open={i === 0}>
                   <summary>{question}<span aria-hidden="true">⌄</span></summary>
@@ -176,7 +176,7 @@ export default function BolosPersonalizados() {
                 </details>
               ))}
             </div>
-            <div className="mt-10 text-center">
+            <div className="mt-8 text-center">
               <a
                 href={WA_ORCAMENTO}
                 target="_blank"
@@ -191,11 +191,11 @@ export default function BolosPersonalizados() {
         </section>
       </main>
 
-      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-5 py-10 text-[#FFF9F0]/70 lg:px-8">
-        <div className="mx-auto max-w-7xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-24 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-12 lg:px-8">
+        <div className="mx-auto max-w-7xl flex flex-col gap-4 md:flex-row md:gap-6 md:items-center md:justify-between">
           <div>
             <p className="text-[#FFF9F0] font-semibold">{SITE.fullName}</p>
-            <p className="text-sm mt-1">{SITE.city}, {SITE.state} – Brasil</p>
+            <p className="text-sm mt-2">{SITE.city}, {SITE.state} – Brasil</p>
             <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "bolos_footer" })} className="text-sm hover:text-[#FFF9F0] transition">
               {SITE.whatsappDisplay}
             </a>

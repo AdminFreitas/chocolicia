@@ -85,7 +85,7 @@ button {
 }
 
 .section-heading {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -246,13 +246,13 @@ button {
   transform: translateY(-2px);
 }
 
-.site-footer-inner { display: grid; justify-items: center; gap: 2.25rem; align-items: start; text-align: center; }
-.site-footer-brand { display: grid; gap: .85rem; }
+.site-footer-inner { display: grid; justify-items: center; gap: 1.5rem; align-items: start; text-align: center; }
+.site-footer-brand { display: grid; gap: .75rem; }
 .footer-brand-lockup { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; width: fit-content; }
 .footer-brand-lockup img { height: 2.8rem; width: 4.4rem; object-fit: contain; }
 .site-footer-brand p { max-width: 14rem; color: rgb(255 249 240 / 58%); font-size: .78rem; line-height: 1.6; }
 .footer-kicker { color: #f3cd73; font-size: .64rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-.site-footer-nav, .site-footer-contact, .site-footer-social { display: grid; justify-items: center; align-content: start; gap: .7rem; }
+.site-footer-nav, .site-footer-contact, .site-footer-social { display: grid; justify-items: center; align-content: start; gap: .75rem; }
 .site-footer-nav a, .site-footer-contact a { width: fit-content; color: rgb(255 249 240 / 68%); font-size: .78rem; transition: color 180ms ease, transform 180ms ease; }
 .site-footer-nav a:hover, .site-footer-contact a:hover { color: #f3cd73; transform: translateX(2px); }
 .site-footer-social .social-icon { height: 2.55rem; width: 2.55rem; }
@@ -271,15 +271,15 @@ button {
 .legal-toc a { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid rgb(243 205 115 / 38%); border-radius: 999px; padding: .7rem 1rem; color: #fff9f0; font-size: .74rem; font-weight: 600; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
 .legal-toc a:hover { background: #d9a83e; color: #3a241d; transform: translateY(-2px); }
 .legal-section { max-width: 48rem; }
-.legal-section-divider { margin-top: 5rem; border-top: 1px solid rgb(217 168 62 / 28%); padding-top: 5rem; }
-.legal-section-heading { display: flex; align-items: flex-start; gap: .9rem; }
-.legal-section h2 { margin-top: .35rem; font-family: "Playfair Display", serif; font-size: clamp(2.3rem, 5vw, 3.5rem); font-weight: 500; letter-spacing: -.035em; line-height: 1.05; }
-.legal-section p { margin-top: 1.35rem; color: #8a5a44; font-size: .94rem; line-height: 1.9; }
-.legal-section h3 { margin-top: 2.35rem; color: #5a3428; font-family: "Playfair Display", serif; font-size: 1.5rem; font-weight: 600; }
+.legal-section-divider { border-top: 1px solid rgb(217 168 62 / 28%); }
+.legal-section-heading { display: flex; align-items: flex-start; gap: 1rem; }
+.legal-section h2 { margin-top: .5rem; font-family: "Playfair Display", serif; font-size: clamp(2.3rem, 5vw, 3.5rem); font-weight: 500; letter-spacing: -.035em; line-height: 1.05; }
+.legal-section p { margin-top: 1rem; color: #8a5a44; font-size: .94rem; line-height: 1.9; }
+.legal-section h3 { margin-top: 1.5rem; color: #5a3428; font-family: "Playfair Display", serif; font-size: 1.5rem; font-weight: 600; }
 .legal-section a { color: #8a5a44; text-decoration: underline; text-decoration-color: rgb(217 168 62 / 75%); text-underline-offset: .2rem; }
 .legal-section a:hover { color: #5a3428; }
 .legal-updated { border-left: 2px solid #d9a83e; padding-left: .8rem; font-size: .76rem !important; }
-.legal-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; border-top: 1px solid rgb(255 249 240 / 12%); padding: 1.25rem 1.5rem; color: rgb(255 249 240 / 48%); font-size: .68rem; }
+.legal-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; border-top: 1px solid rgb(255 249 240 / 12%); color: rgb(255 249 240 / 48%); font-size: .68rem; }
 .legal-footer a:hover { color: #f3cd73; }
 .catalog-gallery { min-height: 12rem; }
 .catalog-image-card { position: relative; overflow: hidden; min-height: 15rem; border: 1px solid rgb(217 168 62 / 20%); border-radius: 1rem; background: #fff9f0; box-shadow: 0 16px 40px rgb(58 36 29 / 8%); }
@@ -287,8 +287,7 @@ button {
 .catalog-image-card:hover img { transform: scale(1.04); }
 .catalog-image-card figcaption { position: absolute; right: .75rem; bottom: .75rem; left: .75rem; border: 1px solid rgb(255 249 240 / 22%); border-radius: .65rem; background: rgb(58 36 29 / 78%); padding: .55rem .7rem; color: #fff9f0; font-size: .7rem; line-height: 1.35; backdrop-filter: blur(8px); }
 .catalog-empty { display: flex; min-height: 12rem; align-items: center; justify-content: center; gap: .65rem; border: 1px dashed rgb(217 168 62 / 48%); border-radius: 1rem; color: #8a5a44; font-size: .8rem; text-align: center; }
-.catalog-access-card, .catalog-manager { border: 1px solid rgb(217 168 62 / 28%); border-radius: 1rem; background: rgb(255 249 240 / 78%); padding: 1.2rem; box-shadow: 0 14px 36px rgb(58 36 29 / 7%); }
-.catalog-access-card { display: flex; align-items: center; gap: .75rem; }
+.catalog-manager { border: 1px solid rgb(217 168 62 / 28%); border-radius: 1rem; background: rgb(255 249 240 / 78%); padding: 1.2rem; box-shadow: 0 14px 36px rgb(58 36 29 / 7%); }
 .catalog-upload-field { display: flex; min-width: 0; flex-direction: column; gap: .45rem; color: #5a3428; font-size: .72rem; font-weight: 600; }
 .catalog-upload-field input { min-width: 0; border: 1px solid rgb(90 52 40 / 18%); border-radius: .65rem; background: #fff9f0; padding: .8rem .85rem; color: #5a3428; font: inherit; font-size: .76rem; font-weight: 400; }
 .catalog-upload-field input:focus { border-color: #d9a83e; outline: 0; box-shadow: 0 0 0 3px rgb(217 168 62 / 14%); }
@@ -483,16 +482,17 @@ button {
 
 @media (min-width: 768px) {
   .section-heading {
-    margin-bottom: 3.5rem;
+    margin-bottom: 2.5rem;
     flex-direction: row;
     align-items: end;
     justify-content: space-between;
   }
 
-  .site-footer-inner { grid-template-columns: repeat(4, 1fr); gap: 3rem; }
+  .site-footer-inner { grid-template-columns: repeat(4, 1fr); gap: 2rem; }
 }
 
 @media (min-width: 1024px) {
+  .section-heading { margin-bottom: 3rem; }
   .header-cta { display: inline-flex !important; }
 }
 
@@ -532,12 +532,12 @@ button {
 .faq-photo img { transition: transform 500ms ease; }
 .faq-photo:hover img { transform: scale(1.035); }
 .faq-list { border-top: 1px solid rgb(90 52 40 / 18%); }
-.faq-item { border-bottom: 1px solid rgb(90 52 40 / 18%); }
-.faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.35rem 0; color: #5a3428; font-family: "Playfair Display", serif; font-size: clamp(1.25rem, 2.4vw, 1.75rem); line-height: 1.2; list-style: none; cursor: pointer; }
+.faq-item { border-bottom: 1px solid rgb(90 52 40 / 18%); padding: 1rem; }
+.faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 0; color: #5a3428; font-family: "Playfair Display", serif; font-size: clamp(1.25rem, 2.4vw, 1.75rem); line-height: 1.2; list-style: none; cursor: pointer; }
 .faq-item summary::-webkit-details-marker { display: none; }
 .faq-item summary span { color: #d9a83e; font-family: "Poppins", sans-serif; font-size: 1.5rem; transition: transform 180ms ease; }
 .faq-item[open] summary span { transform: rotate(180deg); }
-.faq-item p { max-width: 48rem; margin: 0 2.5rem 1.35rem 0; color: #8a5a44; font-size: .95rem; line-height: 1.85; }
+.faq-item p { max-width: 48rem; margin: .5rem 0 0; color: #8a5a44; font-size: .95rem; line-height: 1.85; }
 @media (max-width: 767px) {
   .tech-title { height: 8.5rem; margin-top: .2rem; }
   .dock { bottom: .7rem; }
@@ -545,6 +545,9 @@ button {
   .dock-item { transform: none; }
   .dock-label { display: none; }
   .flip-card { height: 430px !important; }
-  .faq-item summary { padding: 1.1rem 0; font-size: 1.25rem; }
-  .faq-item p { margin-right: 0; font-size: .85rem; line-height: 1.75; }
+  .faq-item summary { font-size: 1.25rem; }
+  .faq-item p { font-size: .85rem; line-height: 1.75; }
+}
+@media (min-width: 768px) {
+  .faq-item { padding: 1.25rem; }
 }

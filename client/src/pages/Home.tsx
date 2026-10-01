@@ -117,7 +117,7 @@ function Carousel({
   const move = (direction: number) => ref.current?.scrollBy({ left: direction * 380, behavior: "smooth" });
   return (
     <div className="relative">
-      <div ref={ref} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:gap-6">
+      <div ref={ref} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:gap-6 lg:gap-8">
         {items.map((item, index) => (
           <button key={item[0]} onClick={() => onOpen(item)} className="group relative min-w-[82%] snap-start overflow-hidden rounded-[1.5rem] text-left sm:min-w-[46%] lg:min-w-[31.5%]">
             <img src={item[0]} alt={item[1]} loading="lazy" className="h-80 w-full object-cover transition duration-700 group-hover:scale-105" />
@@ -125,7 +125,7 @@ function Carousel({
           </button>
         ))}
       </div>
-      <div className="mt-7 hidden justify-end gap-2 md:flex">
+      <div className="mt-6 hidden justify-end gap-4 md:flex">
         <button onClick={() => move(-1)} aria-label="Anterior" className="carousel-button rotate-180"><Icon name="arrow" /></button>
         <button onClick={() => move(1)} aria-label="Próximo" className="carousel-button"><Icon name="arrow" /></button>
       </div>
@@ -144,17 +144,17 @@ function FAQSection() {
     ["Como saber quais opções estão disponíveis?", "Envie sua ideia e os detalhes da comemoração pelos canais de contato para conversar sobre as opções."],
   ];
   return (
-    <section id="faq" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-5 py-24 md:py-36 lg:px-8">
-      <div className="mx-auto grid max-w-7xl items-start gap-12 lg:grid-cols-[.8fr_1.2fr] lg:gap-20">
+    <section id="faq" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+      <div className="mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-[.8fr_1.2fr] lg:gap-12">
         <div>
-          <p className="eyebrow mb-4">Antes de encomendar</p>
+          <p className="eyebrow mb-3">Antes de encomendar</p>
           <h2 className="section-title">Perguntas frequentes</h2>
-          <p className="mt-6 max-w-md text-lg leading-8 text-[#8A5A44]">Tudo para você se organizar com tranquilidade e aproveitar a sua celebração do jeitinho que imaginou.</p>
-          <div className="faq-photo mt-8 overflow-hidden rounded-t-[5rem] rounded-b-2xl">
+          <p className="mt-3 max-w-md text-lg leading-8 text-[#8A5A44]">Tudo para você se organizar com tranquilidade e aproveitar a sua celebração do jeitinho que imaginou.</p>
+          <div className="faq-photo mt-6 overflow-hidden rounded-t-[5rem] rounded-b-2xl">
             <img src={mesaPersonalizada} alt="Mesa de doces da Chocolícia preparada para um evento" loading="lazy" className="h-64 w-full object-cover" />
           </div>
         </div>
-        <div className="faq-list">
+        <div className="faq-list space-y-3">
           {faqs.map(([question, answer], index) => <details className="faq-item" key={question} open={index === 0}><summary>{question}<span aria-hidden="true">⌄</span></summary><p>{answer}</p></details>)}
         </div>
       </div>
@@ -169,12 +169,12 @@ function ReviewsSection() {
   const safeActiveReview = Math.min(activeReview, Math.max(filteredReviews.length - 1, 0));
   const review = filteredReviews[safeActiveReview];
   return (
-    <section data-reveal className="reveal bg-[#F3E5D0]/65 px-5 py-24 md:py-36 lg:px-8">
+    <section data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
+        <div className="mx-auto mb-8 max-w-2xl text-center md:mb-10 lg:mb-12">
           <p className="eyebrow mb-3">Experiências Chocolícia</p>
           <h2 className="section-title mx-auto">Carinho que se transforma em confiança</h2>
-          <p className="mt-5 leading-7 text-[#8A5A44]">Avaliações de quem escolheu a Chocolícia para fazer parte de momentos especiais.</p>
+          <p className="mt-3 leading-7 text-[#8A5A44]">Avaliações de quem escolheu a Chocolícia para fazer parte de momentos especiais.</p>
         </div>
         <div className="review-filter" aria-label="Filtrar avaliações">
           <span>Mostrar:</span>
@@ -192,8 +192,8 @@ function ReviewsSection() {
                 <Icon name="arrow" className="h-3.5 w-3.5" /> Ler no Google
               </a>
             </div>
-            <blockquote className="relative z-[1] mt-5 font-display text-xl italic leading-8 text-[#5A3428]">{review.text}</blockquote>
-            <div className="relative z-[1] mt-7 grid gap-3 border-t border-[#D9A83E]/20 pt-5 text-sm text-[#8A5A44] sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-5">
+            <blockquote className="relative z-[1] mt-4 font-display text-xl italic leading-8 text-[#5A3428]">{review.text}</blockquote>
+            <div className="relative z-[1] mt-6 grid gap-4 border-t border-[#D9A83E]/20 pt-4 text-sm text-[#8A5A44] sm:grid-cols-[auto_1fr] sm:items-start sm:gap-x-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[.16em]">{review.name}</p>
                 <p className="mt-1 text-xs text-[#8A5A44]/75">{review.date}</p>
@@ -247,13 +247,13 @@ function QuoteSection() {
   };
 
   return (
-    <section id="orcamento" data-reveal className="reveal scroll-mt-20 bg-[#FFF9F0] px-5 py-24 md:py-36 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-start lg:gap-20">
+    <section id="orcamento" data-reveal className="reveal scroll-mt-20 bg-[#FFF9F0] px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[.75fr_1.25fr] lg:items-start lg:gap-12">
         <div>
-          <p className="eyebrow mb-4">Seu momento, do seu jeito</p>
+          <p className="eyebrow mb-3">Seu momento, do seu jeito</p>
           <h2 className="section-title">Monte seu pedido com a gente</h2>
-          <p className="mt-6 max-w-md text-lg leading-8 text-[#8A5A44]">Preencha os detalhes e receba no WhatsApp uma mensagem pronta para agilizar seu orçamento personalizado.</p>
-          <div className="quote-points mt-9"><span>Resposta próxima e personalizada</span><span>Cardápio pensado para sua ocasião</span><span>Entrega e prazos explicados com clareza</span></div>
+          <p className="mt-3 max-w-md text-lg leading-8 text-[#8A5A44]">Preencha os detalhes e receba no WhatsApp uma mensagem pronta para agilizar seu orçamento personalizado.</p>
+          <div className="quote-points mt-6"><span>Resposta próxima e personalizada</span><span>Cardápio pensado para sua ocasião</span><span>Entrega e prazos explicados com clareza</span></div>
         </div>
         {sent ? (
           <div className="quote-success" role="status" aria-live="polite">
@@ -262,12 +262,12 @@ function QuoteSection() {
             <h3 className="font-display text-4xl leading-tight text-[#5A3428]">Obrigada por escolher a Chocolícia!</h3>
             <p className="mt-4 text-base leading-7 text-[#8A5A44]">Seu resumo já foi enviado para o WhatsApp. Em breve, vamos conversar para transformar sua ideia em uma celebração deliciosa.</p>
             {saveError && <p className="mt-3 text-xs font-semibold leading-5 text-[#8A5A44]">O WhatsApp foi aberto, mas o pedido não pôde ser salvo no Neon. Tente enviar novamente se precisar.</p>}
-            <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "quote_success" })} className="button-gold button-primary mt-7 w-full">Abrir conversa no WhatsApp</a>
-            <button type="button" onClick={() => setSent(false)} className="button-outline mt-3 w-full">Enviar outro orçamento</button>
+            <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "quote_success" })} className="button-gold button-primary mt-4 w-full">Abrir conversa no WhatsApp</a>
+            <button type="button" onClick={() => setSent(false)} className="button-outline mt-2 w-full">Enviar outro orçamento</button>
           </div>
         ) : (
         <form onSubmit={submit} className="quote-form">
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 md:gap-6">
             <label>Seu nome<input required value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Como podemos chamar você?" /></label>
             <label>Tipo de evento<select required value={form.event} onChange={(e) => update("event", e.target.value)}><option value="">Selecione uma opção</option><option>Aniversário</option><option>Casamento</option><option>Chá de bebê</option><option>Corporativo</option><option>Outro evento</option></select></label>
             <label>Convidados<select required value={form.guests} onChange={(e) => update("guests", e.target.value)}><option value="">Estimativa de convidados</option><option>Até 20 pessoas</option><option>21 a 50 pessoas</option><option>51 a 100 pessoas</option><option>Mais de 100 pessoas</option></select></label>
@@ -275,8 +275,8 @@ function QuoteSection() {
             <label className="md:col-span-2">O que você deseja?<select required value={form.category} onChange={(e) => update("category", e.target.value)}><option value="">Escolha o tipo de pedido</option><option>Bolo personalizado</option><option>Doces e brigadeiros</option><option>Kit festa</option><option>Buffet completo</option><option>Ainda estou em dúvida</option></select></label>
             <label className="md:col-span-2">Conte um pouco mais<textarea value={form.details} onChange={(e) => update("details", e.target.value)} placeholder="Sabores, tema, cores ou qualquer detalhe importante..." rows={4} /></label>
           </div>
-          <button type="submit" disabled={createOrder.isPending} className="button-gold button-primary mt-7 w-full">{createOrder.isPending ? "Salvando pedido…" : "Enviar resumo pelo WhatsApp"}</button>
-          {saveError && <p className="mt-3 text-center text-xs leading-5 text-[#8A5A44]" role="status">O WhatsApp foi aberto, mas não conseguimos salvar o pedido no momento.</p>}
+          <button type="submit" disabled={createOrder.isPending} className="button-gold button-primary mt-4 w-full">{createOrder.isPending ? "Salvando pedido…" : "Enviar resumo pelo WhatsApp"}</button>
+          {saveError && <p className="mt-2 text-center text-xs leading-5 text-[#8A5A44]" role="status">O WhatsApp foi aberto, mas não conseguimos salvar o pedido no momento.</p>}
               <p className="mt-4 text-center text-xs leading-5 text-[#8A5A44]">Você será direcionado para o WhatsApp com os dados preenchidos.</p>
         </form>
         )}
@@ -321,7 +321,7 @@ export default function Home() {
       <WebSiteSchema />
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[#5A3428]/10 bg-[#FFF9F0]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-5 lg:h-20 lg:px-8">
+        <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-4 md:px-6 lg:h-20 lg:px-8">
           <a href="#inicio" className="brand-lockup flex items-center gap-3" aria-label="Chocolícia - início">
             <img src={logo} alt="Chocolícia — Arte dos doces e buffet" className="h-12 w-32 object-contain object-left" />
             <span className="font-display text-2xl font-semibold">Chocolícia</span>
@@ -335,10 +335,10 @@ export default function Home() {
           </button>
         </div>
         {menuOpen && (
-          <div className="border-t border-[#5A3428]/10 bg-[#FFF9F0] px-5 pb-6 pt-3 lg:hidden">
+          <div className="border-t border-[#5A3428]/10 bg-[#FFF9F0] px-4 pb-6 pt-3 md:px-6 lg:hidden">
             <nav className="flex flex-col">
               {nav.map(([label, href]) => <a key={href} href={href} onClick={() => setMenuOpen(false)} className="border-b border-[#5A3428]/10 py-3.5 font-medium">{label}</a>)}
-              <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "header_mobile" })} className="button-gold mt-5 justify-center">Peça pelo WhatsApp</a>
+              <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "header_mobile" })} className="button-gold mt-4 justify-center">Peça pelo WhatsApp</a>
             </nav>
           </div>
         )}
@@ -373,9 +373,9 @@ export default function Home() {
                   strokeWidth={1.5}
                   speed={1}
                   lineStyle="dashed"
-                  selection={false}
-                  labels={false}
-                  draggable={false}
+                  selection
+                  labels
+                  draggable
                   sweep
                 />
                 </span>
@@ -393,7 +393,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2"><i className="h-1 w-1 rounded-full bg-[#D9A83E]" /> Feito sob encomenda</span>
               </div>
             </div>
-                    <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:gap-6">
+            <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:gap-6">
               <div className="image-card h-[25rem] md:h-[38rem]">
                 <img src={photos.hero} alt="Bolo de aniversário artesanal da Chocolícia" className="h-full w-full object-cover" />
                 <span className="photo-label">Feito para celebrar</span>
@@ -432,49 +432,49 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <p className="eyebrow mb-4">Nossa história</p>
+              <p className="eyebrow mb-3">Nossa história</p>
               <h2 className="section-title">Por trás de cada doce, uma história de amor</h2>
-              <div className="mt-7 space-y-4 text-lg leading-8 text-[#8A5A44]">
+              <div className="mt-4 space-y-4 text-lg leading-8 text-[#8A5A44]">
                 <p>Chocolícia nasceu do talento e da dedicação de Janine, que transformou seu carinho pela confeitaria em uma verdadeira arte. Cada receita é pensada nos mínimos detalhes, unindo técnica apurada e muito afeto para criar doces que encantam antes mesmo da primeira mordida.</p>
                 <p>Com mãos experientes e um olhar atento a cada textura, cor e sabor, Janine dedica-se a produzir doces e bolos artesanais de altíssima qualidade, sempre com ingredientes selecionados e um cuidado que só quem ama o que faz consegue oferecer.</p>
                 <p>O resultado está no sabor inesquecível de cada brigadeiro, na maciez de cada bolo e na beleza de cada detalhe. Mais do que doces, a Chocolícia entrega momentos especiais, feitos com a paixão de quem transforma a confeitaria em uma verdadeira celebração de sabor e carinho.</p>
               </div>
-              <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "about" })} className="mt-8 inline-flex items-center gap-2 font-semibold text-[#5A3428] underline decoration-[#D9A83E] decoration-2 underline-offset-8">Conte-nos sobre o seu momento <Icon name="arrow" /></a>
+              <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "about" })} className="mt-6 inline-flex items-center gap-2 font-semibold text-[#5A3428] underline decoration-[#D9A83E] decoration-2 underline-offset-8">Conte-nos sobre o seu momento <Icon name="arrow" /></a>
             </div>
           </div>
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="doces" data-reveal className="reveal scroll-mt-20 px-5 py-24 md:py-36 lg:px-8">
+        <section id="doces" data-reveal className="reveal scroll-mt-20 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="section-heading">
               <div><p className="eyebrow mb-3">Pequenos prazeres</p><h2 className="section-title">Nossos Doces</h2></div>
               <p className="max-w-md text-[#8A5A44]">Receitas delicadas, finalizações impecáveis e sabores que ficam na memória.</p>
             </div>
             <Carousel items={sweets} onOpen={setLightbox} />
-            <div className="mt-9 text-center"><a href={productWhatsApp("doces artesanais")} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "sweets_catalog" })} className="text-cta">Consultar sabores e quantidades <Icon name="arrow" /></a></div>
+            <div className="mt-6 text-center"><a href={productWhatsApp("doces artesanais")} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "sweets_catalog" })} className="text-cta">Consultar sabores e quantidades <Icon name="arrow" /></a></div>
           </div>
         </section>
 
-        <section data-reveal className="reveal bg-[#F3E5D0]/65 px-5 py-24 md:py-36 lg:px-8">
+        <section data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="section-heading">
               <div><p className="eyebrow mb-3">O centro da festa</p><h2 className="section-title">Nossos Bolos</h2></div>
               <p className="max-w-md text-[#8A5A44]">Criações exclusivas, pensadas para encantar primeiro os olhos e depois o paladar.</p>
             </div>
             <Carousel items={cakes} onOpen={setLightbox} />
-            <div className="mt-9 text-center"><a href={productWhatsApp("um bolo personalizado")} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "cakes_catalog" })} className="text-cta">Encomendar um bolo personalizado <Icon name="arrow" /></a></div>
+            <div className="mt-6 text-center"><a href={productWhatsApp("um bolo personalizado")} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "cakes_catalog" })} className="text-cta">Encomendar um bolo personalizado <Icon name="arrow" /></a></div>
           </div>
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="produtos" data-reveal className="reveal px-5 py-24 md:py-36 lg:px-8">
+        <section id="produtos" data-reveal className="reveal px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="section-heading">
               <div><p className="eyebrow mb-3">Para celebrar em casa</p><h2 className="section-title">Peça o seu</h2></div>
               <p className="max-w-md text-[#8A5A44]">Escolha sua ocasião. Nós cuidamos dos sabores, da beleza e de cada pequeno detalhe.</p>
             </div>
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3 md:gap-6 lg:gap-8">
               {[
                 [mesaPersonalizada, "Kit Festa", "Uma celebração completa e prática, com tudo combinando.", "um Kit Festa"],
                 [boloBorboletas, "Bolos personalizados", "Criado especialmente para contar a história da sua comemoração.", "um bolo personalizado"],
@@ -489,45 +489,45 @@ export default function Home() {
                   color="#5A3428"
                   tilt
                   glare
-                  front={<div className="flip-product-front"><div className="overflow-hidden"><img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" /></div><div className="p-7"><p className="eyebrow mb-3">Feito sob encomenda</p><h3 className="font-display text-3xl">{title}</h3><p className="mt-3 text-sm leading-7 text-[#8A5A44]">Toque para descobrir</p></div></div>}
-                  back={<div className="flip-product-back"><span className="premium-badge">Detalhes do pedido</span><h3 className="font-display mt-6 text-4xl">{title}</h3><p className="mt-4 text-base leading-7 text-[#8A5A44]">{text}</p><a href={productWhatsApp(message)} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: `product_${title.toLowerCase().replaceAll(" ", "_")}` })} className="button-gold mt-8 w-full">Quero este</a><small className="mt-5 block text-center text-xs uppercase tracking-[.16em] text-[#8A5A44]">WhatsApp com mensagem pronta</small></div>}
+                  front={<div className="flip-product-front"><div className="overflow-hidden"><img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" /></div><div className="p-5 md:p-6"><p className="eyebrow mb-3">Feito sob encomenda</p><h3 className="font-display text-3xl">{title}</h3><p className="mt-2 text-sm leading-7 text-[#8A5A44]">Toque para descobrir</p></div></div>}
+                  back={<div className="flip-product-back"><span className="premium-badge">Detalhes do pedido</span><h3 className="font-display mt-4 text-4xl">{title}</h3><p className="mt-2 text-base leading-7 text-[#8A5A44]">{text}</p><a href={productWhatsApp(message)} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: `product_${title.toLowerCase().replaceAll(" ", "_")}` })} className="button-gold mt-4 w-full">Quero este</a><small className="mt-3 block text-center text-xs uppercase tracking-[.16em] text-[#8A5A44]">WhatsApp com mensagem pronta</small></div>}
                 />
               ))}
             </div>
           </div>
         </section>
 
-        <section id="buffet" data-reveal className="reveal scroll-mt-20 px-5 py-24 md:py-36 lg:px-8">
+        <section id="buffet" data-reveal className="reveal scroll-mt-20 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="relative mx-auto min-h-[42rem] max-w-7xl overflow-hidden rounded-[2rem] md:min-h-[38rem]">
             <img src={photos.event} alt="Buffet de doces preparado para uma celebração" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#3A241D]/95 via-[#3A241D]/55 to-transparent md:bg-gradient-to-r" />
-            <div className="relative z-10 flex min-h-[42rem] max-w-2xl flex-col justify-end p-7 text-[#FFF9F0] md:min-h-[38rem] md:justify-center md:p-16">
+            <div className="relative z-10 flex min-h-[42rem] max-w-2xl flex-col justify-end p-5 text-[#FFF9F0] md:min-h-[38rem] md:justify-center md:p-6">
               <p className="mb-4 text-xs font-semibold uppercase tracking-[.24em] text-[#F3CD73]">Buffet & Eventos</p>
               <h2 className="font-display text-5xl leading-[1.05] md:text-7xl">Seu momento merece um toque especial</h2>
-              <p className="mt-6 max-w-lg text-lg leading-8 text-[#FFF9F0]/80">Do conceito à montagem, cuidamos de cada detalhe para criar uma experiência doce, acolhedora e inesquecível.</p>
-              <ul className="mt-7 grid gap-3 text-sm text-[#FFF9F0]/90 sm:grid-cols-3">
+              <p className="mt-4 max-w-lg text-lg leading-8 text-[#FFF9F0]/80">Do conceito à montagem, cuidamos de cada detalhe para criar uma experiência doce, acolhedora e inesquecível.</p>
+              <ul className="mt-6 grid gap-4 text-sm text-[#FFF9F0]/90 sm:grid-cols-3">
                 {["Cardápio personalizado", "Atendimento próximo", "Finalização cuidadosa"].map((item) => <li key={item} className="event-benefit">{item}</li>)}
               </ul>
-              <a href="#orcamento" className="button-gold mt-8 w-fit">Solicitar orçamento para meu evento</a>
+              <a href="#orcamento" className="button-gold mt-6 w-fit">Solicitar orçamento para meu evento</a>
             </div>
           </div>
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="galeria" data-reveal className="reveal scroll-mt-20 px-5 py-24 md:py-36 lg:px-8">
+        <section id="galeria" data-reveal className="reveal scroll-mt-20 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="section-heading">
               <div><p className="eyebrow mb-3">Nosso portfólio</p><h2 className="section-title">Um pouco do que fazemos</h2></div>
               <a href={instagram} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("instagram_click", { placement: "gallery_desktop" })} className="button-outline hidden md:inline-flex">Ver mais no Instagram</a>
             </div>
-            <div className="grid auto-rows-[13rem] grid-cols-2 gap-3 md:auto-rows-[16rem] md:grid-cols-4 md:gap-5">
+            <div className="grid auto-rows-[13rem] grid-cols-2 gap-4 md:auto-rows-[16rem] md:grid-cols-4 md:gap-6 lg:gap-8">
               {gallery.map(([src, alt], i) => (
                 <button key={`${src}-${i}`} onClick={() => setLightbox([src, alt])} className={`group overflow-hidden rounded-2xl ${i === 0 || i === 5 ? "row-span-2" : ""} ${i === 3 ? "col-span-2" : ""}`}>
                   <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                 </button>
               ))}
             </div>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
               <a href={instagram} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("instagram_click", { placement: "gallery_mobile" })} className="button-outline md:hidden">Ver mais no Instagram</a>
               <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "gallery_inquiry" })} className="text-cta">Quero algo assim <Icon name="arrow" /></a>
             </div>
@@ -535,24 +535,24 @@ export default function Home() {
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="catalogo" data-reveal className="reveal bg-[#F3E5D0]/65 px-5 py-20 lg:px-8">
+        <section id="catalogo" data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="section-heading">
               <div><p className="eyebrow mb-3">Catálogo vivo</p><h2 className="section-title">Novidades que chegam primeiro aqui</h2></div>
               <p className="max-w-md text-[#8A5A44]">Imagens enviadas pela Chocolícia ficam disponíveis em uma galeria segura e atualizada.</p>
             </div>
             <CatalogGallery />
-            <div className="mt-8"><CatalogManager /></div>
+            <CatalogManager />
           </div>
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="servicos" className="bg-[#F3E5D0]/65 px-5 py-20 lg:px-8">
+        <section id="servicos" className="bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <p className="eyebrow mb-3">Chocolícia em Niterói e no RJ</p>
             <h2 className="section-title">Doces, bolos e buffet para sua comemoração</h2>
-            <p className="mt-5 max-w-3xl leading-7 text-[#8A5A44]">Nossa base fica em Niterói e atendemos também São Gonçalo, Maricá, Itaboraí e outras cidades do estado do Rio de Janeiro. Para conversar sobre uma encomenda ou evento, fale conosco pelo WhatsApp, telefone ou formulário.</p>
-            <nav aria-label="Serviços e áreas atendidas" className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
+            <p className="mt-3 max-w-3xl leading-7 text-[#8A5A44]">Nossa base fica em Niterói e atendemos também São Gonçalo, Maricá, Itaboraí e outras cidades do estado do Rio de Janeiro. Para conversar sobre uma encomenda ou evento, fale conosco pelo WhatsApp, telefone ou formulário.</p>
+            <nav aria-label="Serviços e áreas atendidas" className="mt-6 flex flex-wrap gap-4 md:gap-x-6">
               <a href="/buffet-para-festas" className="text-cta">Buffet para festas</a>
               <a href="/bolos-personalizados" className="text-cta">Bolos personalizados</a>
               <a href="/doces-para-festas" className="text-cta">Doces para festas</a>
@@ -565,14 +565,14 @@ export default function Home() {
 
         <QuoteSection />
 
-        <section id="contato" data-reveal className="reveal scroll-mt-20 bg-[#3A241D] px-5 py-24 text-center text-[#FFF9F0] md:py-36 lg:px-8">
+        <section id="contato" data-reveal className="reveal scroll-mt-20 bg-[#3A241D] px-4 py-12 text-center text-[#FFF9F0] md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl">
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[.26em] text-[#D9A83E]">Fale com a gente</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[.26em] text-[#D9A83E]">Fale com a gente</p>
             <h2 className="font-display text-5xl leading-tight md:text-8xl">Vamos adoçar o seu momento?</h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-[#FFF9F0]/70">Conte sua ideia para nós. Será um prazer criar algo único para a sua celebração.</p>
-            <a href="#orcamento" className="button-gold button-final mt-9 text-sm">Solicitar orçamento</a>
-            <div className="mt-6"><a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "contact_catalog" })} className="text-sm text-[#FFF9F0]/70 underline decoration-[#D9A83E]/70 underline-offset-4 transition hover:text-[#FFF9F0]">Prefere ver nosso catálogo completo? Chame no WhatsApp</a></div>
-            <div className="mt-7 flex flex-col items-center gap-3 text-sm text-[#FFF9F0]/70 sm:flex-row sm:justify-center sm:gap-6">
+            <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-[#FFF9F0]/70 md:mt-5">Conte sua ideia para nós. Será um prazer criar algo único para a sua celebração.</p>
+            <a href="#orcamento" className="button-gold button-final mt-6 text-sm">Solicitar orçamento</a>
+            <div className="mt-4"><a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "contact_catalog" })} className="text-sm text-[#FFF9F0]/70 underline decoration-[#D9A83E]/70 underline-offset-4 transition hover:text-[#FFF9F0]">Prefere ver nosso catálogo completo? Chame no WhatsApp</a></div>
+            <div className="mt-6 flex flex-col items-center gap-4 text-sm text-[#FFF9F0]/70 sm:flex-row sm:justify-center sm:gap-6">
               <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "home_contact" })} className="transition hover:text-[#FFF9F0]">{SITE.whatsappDisplay}</a>
               <a href={`mailto:${officialEmail}`} className="transition hover:text-[#FFF9F0]">{officialEmail}</a>
             </div>
@@ -580,7 +580,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-5 py-12 text-[#FFF9F0]/70 lg:px-8 lg:py-14">
+      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-24 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-12 lg:px-8">
         <div className="site-footer-inner mx-auto max-w-7xl">
           <div className="site-footer-brand">
             <a href="#inicio" className="footer-brand-lockup" aria-label="Chocolícia — início"><img src={logo} alt="" /><span className="font-display text-3xl text-[#FFF9F0]">Chocolícia</span></a>
@@ -604,7 +604,7 @@ export default function Home() {
             <a href={whatsappGreeting} target="_blank" rel="noreferrer" aria-label="Abrir o WhatsApp com uma mensagem de saudação" onClick={() => trackAnalytics("whatsapp_click", { placement: "footer_cta" })} className="footer-compact-cta">Falar no WhatsApp <Icon name="arrow" className="h-3.5 w-3.5" /></a>
           </div>
         </div>
-        <div className="site-footer-bottom mx-auto mt-10 max-w-7xl"><span>© 2026 Chocolícia</span><span>Feito à mão, com carinho.</span><span className="footer-legal-links"><a href="/politicas-e-termos#privacidade">Privacidade</a><a href="/politicas-e-termos#termos">Termos de Uso</a></span></div>
+        <div className="site-footer-bottom mx-auto mt-8 max-w-7xl"><span>© 2026 Chocolícia</span><span>Feito à mão, com carinho.</span><span className="footer-legal-links"><a href="/politicas-e-termos#privacidade">Privacidade</a><a href="/politicas-e-termos#termos">Termos de Uso</a></span></div>
       </footer>
 
       <Dock items={[

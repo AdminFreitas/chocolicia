@@ -6,7 +6,7 @@ export default function Legal() {
   return (
     <div className="legal-page min-h-screen bg-[#FFF9F0] text-[#5A3428]">
       <header className="legal-header">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6 md:py-5 lg:px-8">
           <a href="/" className="footer-brand-lockup" aria-label="Voltar para a Chocolícia">
             <span className="font-display text-2xl text-[#FFF9F0]">Chocolícia</span>
           </a>
@@ -15,19 +15,19 @@ export default function Legal() {
       </header>
 
       <main>
-        <section className="legal-hero px-5 py-20 lg:px-8 lg:py-28">
+        <section className="legal-hero px-4 py-10 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl">
             <p className="eyebrow !text-[#F3CD73]">Transparência e cuidado</p>
-            <h1 className="mt-5 font-display text-5xl leading-[1.04] text-[#FFF9F0] md:text-7xl">Políticas e Termos</h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-[#FFF9F0]/70">Estas informações explicam como a Chocolícia trata dados, pedidos e a utilização deste site.</p>
-            <nav className="legal-toc mt-9" aria-label="Navegação da página legal">
+            <h1 className="mt-4 font-display text-5xl leading-[1.04] text-[#FFF9F0] md:text-7xl">Políticas e Termos</h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-[#FFF9F0]/70 md:mt-5">Estas informações explicam como a Chocolícia trata dados, pedidos e a utilização deste site.</p>
+            <nav className="legal-toc mt-6" aria-label="Navegação da página legal">
               <a href="#privacidade"><ShieldCheck className="h-4 w-4" /> Política de Privacidade</a>
               <a href="#termos"><FileText className="h-4 w-4" /> Termos de Uso</a>
             </nav>
           </div>
         </section>
 
-        <div className="legal-content mx-auto max-w-4xl px-5 py-16 lg:px-8 lg:py-24">
+        <div className="legal-content mx-auto max-w-4xl px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <section id="privacidade" className="legal-section scroll-mt-8">
             <div className="legal-section-heading"><ShieldCheck className="h-6 w-6 text-[#D9A83E]" /><div><p className="eyebrow">Seus dados, com respeito</p><h2>Política de Privacidade</h2></div></div>
             <p>Esta Política de Privacidade descreve como a Chocolícia — Arte dos Doces e Buffet utiliza as informações fornecidas por visitantes e clientes ao navegar pelo site, solicitar um orçamento ou entrar em contato.</p>
@@ -46,7 +46,7 @@ export default function Legal() {
             <p>O site pode utilizar cookies ou tecnologias semelhantes para funcionamento, preferências e análise de uso. Esta política pode ser atualizada quando houver mudança nos serviços ou na legislação. A data da última atualização será indicada abaixo.</p>
           </section>
 
-          <section id="termos" className="legal-section legal-section-divider scroll-mt-8">
+          <section id="termos" className="legal-section legal-section-divider mt-8 pt-8 scroll-mt-8 md:mt-12 md:pt-12">
             <div className="legal-section-heading"><FileText className="h-6 w-6 text-[#D9A83E]" /><div><p className="eyebrow">Uma relação clara</p><h2>Termos de Uso</h2></div></div>
             <p>Ao acessar este site, você concorda com estes Termos de Uso. Caso não concorde com alguma disposição, recomendamos não utilizar os canais digitais da Chocolícia.</p>
             <h3>1. Informações e catálogo</h3>
@@ -66,7 +66,7 @@ export default function Legal() {
         </div>
       </main>
 
-      <footer className="legal-footer"><span>© 2026 Chocolícia</span><a href="#privacidade">Privacidade</a><a href="#termos">Termos de Uso</a></footer>
+      <footer className="legal-footer px-4 py-10 md:px-6 md:py-12 lg:px-8"><span>© 2026 Chocolícia</span><a href="#privacidade">Privacidade</a><a href="#termos">Termos de Uso</a></footer>
     </div>
   );
 }
