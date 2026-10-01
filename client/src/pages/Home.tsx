@@ -353,8 +353,9 @@ export default function Home() {
                 <p className="eyebrow">Doces artesanais & buffet</p>
                 <span className="premium-badge">Feito à mão, com carinho</span>
               </div>
-              <h1 className="font-display text-3xl leading-tight text-[#5A3428] md:text-4xl">Doces, bolos e buffet para festas em Niterói e região</h1>
-              <div className="tech-title" aria-hidden="true">
+              <h1 className="tech-title">
+                <span className="sr-only">Chocolícia – doces, bolos e buffet para festas em Niterói e região</span>
+                <span aria-hidden="true">
                 <TechText
                   text="Chocolícia"
                   fontWeight={500}
@@ -372,12 +373,13 @@ export default function Home() {
                   strokeWidth={1.5}
                   speed={1}
                   lineStyle="dashed"
-                  selection
-                  labels
-                  draggable
+                  selection={false}
+                  labels={false}
+                  draggable={false}
                   sweep
                 />
-              </div>
+                </span>
+              </h1>
               <div className="mt-7 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
                 <p className="max-w-xl text-xl leading-relaxed text-[#8A5A44] md:text-2xl">Momentos especiais merecem sabores inesquecíveis.</p>
                 <div className="flex flex-wrap gap-3">
@@ -404,8 +406,9 @@ export default function Home() {
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="sobre" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-5 py-24 md:py-36 lg:px-8">
-          <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
+        <section id="sobre" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-2 lg:gap-12">
+            <p className="max-w-4xl text-lg leading-8 text-[#8A5A44] lg:col-span-2">Somos uma empresa que preza pela qualidade e pelo trabalho manual, rico em detalhes. Doces, bolos e buffet para festas em Niterói, São Gonçalo, Maricá, Itaboraí e todo o estado do Rio de Janeiro.</p>
             <div className="relative">
               <BorderGlow
                 edgeSensitivity={26}
