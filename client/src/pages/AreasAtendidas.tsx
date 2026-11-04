@@ -74,9 +74,17 @@ export default function AreasAtendidas() {
           <a href="/" className="font-display text-2xl text-[#FFF9F0]" aria-label="Chocolícia – início">
             Chocolícia
           </a>
-          <a href="/" className="text-sm text-[#FFF9F0]/70 hover:text-[#FFF9F0] transition">
-            ← Voltar ao site
-          </a>
+          <nav className="flex items-center gap-3 md:gap-5 text-sm" aria-label="Navegação do cabeçalho">
+            <a href="/promocao" className="text-[#FFF9F0]/80 hover:text-[#F3CD73] transition">
+              Promoção
+            </a>
+            <a href="/receitas" className="text-[#FFF9F0]/80 hover:text-[#F3CD73] transition">
+              Receitas
+            </a>
+            <a href="/" className="text-[#FFF9F0]/70 hover:text-[#FFF9F0] transition hidden sm:inline">
+              ← Início
+            </a>
+          </nav>
         </div>
       </header>
 

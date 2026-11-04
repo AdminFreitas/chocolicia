@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
+﻿import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
 
 const email = "chocoliciaartedosdoces@gmai.com";
 
@@ -10,7 +10,15 @@ export default function Legal() {
           <a href="/" className="footer-brand-lockup" aria-label="Voltar para a Chocolícia">
             <span className="font-display text-2xl text-[#FFF9F0]">Chocolícia</span>
           </a>
-          <a href="/" className="legal-back-link"><ArrowLeft className="h-4 w-4" /> Voltar ao site</a>
+          <nav className="flex items-center gap-3 md:gap-5 text-sm" aria-label="Navegação do cabeçalho">
+            <a href="/promocao" className="text-[#FFF9F0]/80 hover:text-[#F3CD73] transition">
+              Promoção
+            </a>
+            <a href="/receitas" className="text-[#FFF9F0]/80 hover:text-[#F3CD73] transition">
+              Receitas
+            </a>
+            <a href="/" className="legal-back-link"><ArrowLeft className="h-4 w-4" /> Início</a>
+          </nav>
         </div>
       </header>
 
