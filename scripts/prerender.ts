@@ -11,7 +11,6 @@ import {
   generateLlmsTxt,
   generatePageMarkdownFiles,
   generateRobotsTxt,
-  generateSitemapXml,
 } from "../client/src/seo/buildArtifacts.ts";
 import { getRouteMeta, PRERENDER_PATHS, type RouteMeta } from "../client/src/seo/routeMeta.ts";
 
@@ -30,6 +29,14 @@ function writeFile(filePath: string, content: string) {
   console.log(`  ✓ ${path.relative(root, filePath)}`);
 }
 
+function getRouteStylesheet(routePath: string): string {
+  if (routePath !== "/promocao" && routePath !== "/promocoes") return "";
+  const assetsDir = path.join(distPublic, "assets");
+  const stylesheet = fs.readdirSync(assetsDir).find((file) => /^Promotion-[A-Za-z0-9_-]+\.css$/.test(file));
+  if (!stylesheet) throw new Error("Folha de estilos da página /promocao não encontrada no build.");
+  return `<link rel="stylesheet" crossorigin href="/assets/${stylesheet}">`;
+}
+
 function readTemplate(): string {
   return fs.readFileSync(path.join(distPublic, "index.html"), "utf-8");
 }
@@ -39,8 +46,15 @@ function injectMeta(template: string, meta: RouteMeta, body: string): string {
   const robotsMeta = meta.robots
     ? `\n    <meta name="robots" content="${meta.robots}" />`
     : "";
+  const lcpPreload = meta.path === "/"
+    ? '<link rel="preload" as="image" href="/images/bolo-aniversario.webp" fetchpriority="high" />'
+    : "";
+  const shareImage = meta.ogImage ?? SITE.ogImage;
+  const routeStylesheet = getRouteStylesheet(meta.path);
 
   const headInjection = `
+    ${lcpPreload}
+    ${routeStylesheet}
     <title>${meta.title}</title>
     <meta name="description" content="${meta.description}" />
     ${canonical}${robotsMeta}
@@ -48,13 +62,13 @@ function injectMeta(template: string, meta: RouteMeta, body: string): string {
     <meta property="og:url" content="${meta.canonical}" />
     <meta property="og:title" content="${meta.ogTitle}" />
     <meta property="og:description" content="${meta.ogDescription}" />
-    <meta property="og:image" content="${SITE.ogImage}" />
+    <meta property="og:image" content="${shareImage}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${meta.ogTitle}" />
     <meta name="twitter:description" content="${meta.ogDescription}" />
-    <meta name="twitter:image" content="${SITE.ogImage}" />`;
+    <meta name="twitter:image" content="${shareImage}" />`;
 
   let html = template
     .replace(/<title>.*?<\/title>/s, "")
@@ -91,6 +105,8 @@ async function prerender() {
     render: (url: string) => string;
   };
   const template = readTemplate();
+  // Mantém uma cópia limpa; os endpoints dinâmicos não devem partir do HTML já prerenderizado da Home.
+  writeFile(path.join(root, "dist", "recipe-shell.html"), template);
 
   for (const routePath of PRERENDER_PATHS) {
     const meta = getRouteMeta(routePath);
@@ -104,7 +120,7 @@ async function prerender() {
   }
 
   writeFile(path.join(distPublic, "robots.txt"), generateRobotsTxt());
-  writeFile(path.join(distPublic, "sitemap.xml"), generateSitemapXml());
+  // O sitemap é servido dinamicamente pela rota/API, para incluir receitas publicadas após este build.
   writeFile(path.join(distPublic, "llms.txt"), generateLlmsTxt());
   writeFile(path.join(distPublic, "llms-full.txt"), generateLlmsFullTxt());
 

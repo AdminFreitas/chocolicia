@@ -74,6 +74,7 @@ export function generateLlmsTxt(): string {
 ## Páginas principais
 
 - [Início](${SITE.url}/) – Serviços, contato e formulário de orçamento.
+- [Receitas](${SITE.url}/receitas) – Receitas de bolos, docinhos, sobremesas e chocolates com ingredientes e preparo passo a passo.
 - [Buffet para Festas](${SITE.url}/buffet-para-festas) – Informações sobre buffet para diferentes tipos de eventos.
 - [Bolos Personalizados](${SITE.url}/bolos-personalizados) – Informações sobre bolos personalizados.
 - [Doces para Festas](${SITE.url}/doces-para-festas) – Informações sobre doces artesanais para festas.

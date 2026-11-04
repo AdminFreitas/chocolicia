@@ -4,12 +4,32 @@
   "outputDirectory": "dist/public",
   "functions": {
     "api/index.ts": {
+      "maxDuration": 120,
+      "memory": 1024
+    },
+    "api/recipe-page.ts": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "includeFiles": "dist/recipe-shell.html"
+    },
+    "api/recipes-sitemap.ts": {
       "maxDuration": 30,
       "memory": 1024
     }
   },
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
+  "crons": [
+    { "path": "/api/recipes/generate-daily", "schedule": "0 13 * * *" }
+  ],
+  "rewrites": [
+    { "source": "/receitas/:slug", "destination": "/api/recipe-page?slug=:slug" },
+    { "source": "/sitemap.xml", "destination": "/api/recipes-sitemap" },
+    { "source": "/api/(.*)", "destination": "/api" }
+  ],
   "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
     {
       "source": "/llms.txt",
       "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]

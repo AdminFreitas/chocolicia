@@ -13,6 +13,7 @@ export interface RouteMeta {
   canonical: string;
   ogTitle: string;
   ogDescription: string;
+  ogImage?: string;
   robots?: string;
   /** false exclui do sitemap (ex.: legal, 404, showcase) */
   inSitemap?: boolean;
@@ -21,6 +22,9 @@ export interface RouteMeta {
 /** Rotas pré-renderizadas no build (ordem estável) */
 export const PRERENDER_PATHS = [
   "/",
+  "/receitas",
+  "/promocao",
+  "/promocoes",
   "/buffet-para-festas",
   "/bolos-personalizados",
   "/doces-para-festas",
@@ -41,6 +45,34 @@ export const routeMeta: Record<string, RouteMeta> = {
      ogTitle: "Doces, Bolos e Buffet para Festas em Niterói e Região | Chocolícia",
     ogDescription:
       "Doces artesanais, bolos personalizados e buffet para eventos inesquecíveis no Rio de Janeiro. Peça orçamento pelo WhatsApp.",
+  },
+  "/receitas": {
+    path: "/receitas",
+    title: "Receitas para adoçar o seu dia | Chocolícia",
+    description: "Descubra receitas de bolos, docinhos, tortas, sobremesas e chocolates, com ingredientes e passo a passo da Chocolícia.",
+    canonical: `${base}/receitas`,
+    ogTitle: "Receitas para adoçar o seu dia | Chocolícia",
+    ogDescription: "Receitas artesanais, acolhedoras e testadas para fazer em casa, com dicas da Chocolícia.",
+  },
+  "/promocao": {
+    path: "/promocao",
+    title: "Promoção de Natal 2026 — 25% OFF | Chocolícia",
+    description: "Promoção de Natal Chocolícia: produtos artesanais, panetones, chocotones, presentes e Kit Ceia. Consulte condições e disponibilidade pelo WhatsApp até 22/12/2026.",
+    canonical: `${base}/promocao`,
+    ogTitle: "Promoção de Natal 2026 — 25% OFF | Chocolícia",
+    ogDescription: "Um Natal mais doce na sua mesa. Conheça os produtos artesanais da campanha e consulte pelo WhatsApp as condições da promoção.",
+    ogImage: `${base}/images/promocao/hero-og.jpg`,
+  },
+  "/promocoes": {
+    path: "/promocoes",
+    title: "Promoção de Natal 2026 | Chocolícia",
+    description: "Conheça a campanha de Natal da Chocolícia e consulte pelo WhatsApp os produtos participantes e condições.",
+    canonical: `${base}/promocao`,
+    ogTitle: "Promoção de Natal 2026 | Chocolícia",
+    ogDescription: "Produtos artesanais para um Natal mais doce. Consulte condições e disponibilidade pelo WhatsApp.",
+    ogImage: `${base}/images/promocao/hero-og.jpg`,
+    robots: "noindex,follow",
+    inSitemap: false,
   },
   "/buffet-para-festas": {
     path: "/buffet-para-festas",

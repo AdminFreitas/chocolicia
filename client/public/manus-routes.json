@@ -1,0 +1,14 @@
+{
+  "routes": [
+    { "path": "/", "title": "Home | Chocolícia" },
+    { "path": "/buffet-para-festas", "title": "Buffet para festas" },
+    { "path": "/bolos-personalizados", "title": "Bolos personalizados" },
+    { "path": "/doces-para-festas", "title": "Doces para festas" },
+    { "path": "/areas-atendidas", "title": "Áreas atendidas" },
+    { "path": "/politicas-e-termos", "title": "Políticas e termos" },
+    { "path": "/receitas", "title": "Receitas" },
+    { "path": "/promocao", "title": "Promoção de Natal" },
+    { "path": "/promocoes", "title": "Promoção de Natal" },
+    { "path": "/receitas/:slug", "title": "Receita" }
+  ]
+}

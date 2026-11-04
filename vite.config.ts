@@ -44,4 +44,8 @@ export default defineConfig(({ isSsrBuild }) => ({
       deny: ["**/.*"],
     },
   },
+  preview: {
+    host: true,
+    allowedHosts: [".us3.manus.computer"],
+  },
 }));
