@@ -36,6 +36,27 @@ export async function storagePut(
   return { key, url };
 }
 
+/** Upload a public, durable object for recipe pages; the bucket/CDN must expose this key publicly. */
+export async function storagePutPublic(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream",
+): Promise<{ key: string; url: string }> {
+  const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;
+  if (!publicBaseUrl) throw new Error("RECIPES_PUBLIC_BASE_URL is required for public recipe images");
+  const key = appendHashSuffix(normalizeKey(relKey));
+  const client = getS3Client();
+  await client.send(new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: data,
+    ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
+  }));
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  return { key, url: `${publicBaseUrl.replace(/\/$/, "")}/${encodedKey}` };
+}
+
 export async function storageGetSignedUrl(relKey: string, expiresIn = 3600) {
   const client = getS3Client();
   return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: normalizeKey(relKey) }), { expiresIn });
