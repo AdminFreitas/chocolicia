@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import PhotoCarousel from "../components/PhotoCarousel";
-import { CakeSlice, Facebook, House, Instagram, MessageCircle, Music2 } from "lucide-react";
+import { BookOpen, CakeSlice, Facebook, House, Instagram, MessageCircle, Music2 } from "lucide-react";
 import BorderGlow from "../components/BorderGlow";
 import { CatalogGallery, CatalogManager } from "../components/CatalogManager";
 import Dock from "../components/Dock";
+import { FloatingWhatsApp, SiteFooter, SiteHeader } from "../components/SiteChrome";
+import RecentRecipesSection from "../components/RecentRecipesSection";
+import HomePromotionBanner from "../components/HomePromotionBanner";
 import FlipCard from "../components/FlipCard";
 import { SITE, WA_ORCAMENTO, waLink, waProduct } from "@/config/site";
 import { trackEvent } from "@/lib/analytics";
@@ -13,7 +16,6 @@ import { trpc } from "../lib/trpc";
 // @ts-expect-error React Bits ships this visual component as JavaScript.
 import TechText from "../components/TechText.jsx";
 
-const logo = "/images/logo.png";
 const janine = "/images/janine.jpg";
 const cupcakesRosa = "/images/cupcakes-rosas.webp";
 const docesColoridos = "/images/doces-coloridos.webp";
@@ -29,7 +31,6 @@ const productWhatsApp = waProduct;
 const instagram = SITE.instagram;
 const facebook = SITE.facebook;
 const tiktok = SITE.tiktok;
-const officialEmail = SITE.email;
 const googleBusiness = SITE.googleBusiness;
 
 type UmamiAnalytics = {
@@ -96,16 +97,6 @@ function Icon({ name, className = "h-5 w-5" }: { name: string; className?: strin
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function SocialLinks({ className = "", placement = "social_links" }: { className?: string; placement?: string }) {
-  return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <a href={instagram} target="_blank" rel="noreferrer" aria-label="Instagram" className="social-icon" onClick={() => trackAnalytics("instagram_click", { placement })}><Icon name="instagram" /></a>
-      <a href={facebook} target="_blank" rel="noreferrer" aria-label="Facebook" className="social-icon" onClick={() => trackAnalytics("facebook_click", { placement })}><Icon name="facebook" /></a>
-      <a href={tiktok} target="_blank" rel="noreferrer" aria-label="TikTok" className="social-icon" onClick={() => trackAnalytics("tiktok_click", { placement })}><Music2 className="h-5 w-5" /></a>
-    </div>
-  );
-}
-
 function Carousel({
   items,
   onOpen,
@@ -169,18 +160,18 @@ function ReviewsSection() {
   const safeActiveReview = Math.min(activeReview, Math.max(filteredReviews.length - 1, 0));
   const review = filteredReviews[safeActiveReview];
   return (
-    <section data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+    <section id="depoimentos" data-reveal aria-labelledby="reviews-title" className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto mb-8 max-w-2xl text-center md:mb-10 lg:mb-12">
           <p className="eyebrow mb-3">Experiências Chocolícia</p>
-          <h2 className="section-title mx-auto">Carinho que se transforma em confiança</h2>
-          <p className="mt-3 leading-7 text-[#8A5A44]">Avaliações de quem escolheu a Chocolícia para fazer parte de momentos especiais.</p>
+          <h2 id="reviews-title" className="section-title mx-auto">Avaliações no Google</h2>
+          <p className="mt-3 leading-7 text-[#8A5A44]">Para consultar avaliações publicadas, visite o perfil da Chocolícia no Google.</p>
         </div>
-        <div className="review-filter" aria-label="Filtrar avaliações">
+        {filteredReviews.length > 0 && <div className="review-filter" aria-label="Filtrar avaliações">
           <span>Mostrar:</span>
           <button type="button" className={reviewFilter === "all" ? "is-active" : ""} onClick={() => { setReviewFilter("all"); setActiveReview(0); }}>Todas</button>
           <button type="button" className={reviewFilter === "five" ? "is-active" : ""} onClick={() => { setReviewFilter("five"); setActiveReview(0); }}><Icon name="star" className="h-3.5 w-3.5" /> 5 estrelas</button>
-        </div>
+        </div>}
         {review && <div className="review-carousel">
           <article className="review-card" aria-live="polite">
             <span className="review-quote" aria-hidden="true">“</span>
@@ -206,11 +197,9 @@ function ReviewsSection() {
             <span>{safeActiveReview + 1} / {filteredReviews.length}</span>
             <button type="button" className="carousel-button" onClick={() => setActiveReview((safeActiveReview + 1) % filteredReviews.length)} aria-label="Próximo depoimento"><Icon name="arrow" /></button>
           </div>
-          <p className="sample-review-note">Depoimentos demonstrativos — substitua este conteúdo pelas avaliações reais do Google Meu Negócio.</p>
         </div>}
-        {!review && <p className="review-empty">Nenhuma avaliação encontrada para este filtro.</p>}
         <a href={googleBusiness} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("google_reviews_more_click", { placement: "reviews_section" })} className="review-more-link">
-          Ver mais avaliações <Icon name="arrow" className="h-4 w-4" />
+          Ver avaliações no Google <Icon name="arrow" className="h-4 w-4" />
         </a>
       </div>
     </section>
@@ -286,7 +275,6 @@ function QuoteSection() {
 }
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<string[] | null>(null);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && lightbox && setLightbox(null);
@@ -303,55 +291,21 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  const nav = [
-    ["Início", "#inicio"],
-    ["Sobre", "#sobre"],
-    ["Doces & Bolos", "#doces"],
-    ["Galeria", "#galeria"],
-    ["Catálogo", "#catalogo"],
-    ["FAQ", "#faq"],
-    ["Orçamento", "#orcamento"],
-    ["Contato", "#contato"],
-  ];
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FFF9F0] text-[#5A3428]">
       <PageMeta meta={homeMeta} />
       <BakerySchema />
       <WebSiteSchema />
 
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#5A3428]/10 bg-[#FFF9F0]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-4 md:px-6 lg:h-20 lg:px-8">
-          <a href="#inicio" className="brand-lockup flex items-center gap-3" aria-label="Chocolícia - início">
-            <img src={logo} alt="Chocolícia — Arte dos doces e buffet" className="h-12 w-32 object-contain object-left" />
-            <span className="font-display text-2xl font-semibold">Chocolícia</span>
-          </a>
-          <nav className="hidden items-center gap-7 lg:flex">
-            {nav.map(([label, href]) => <a key={href} href={href} className="nav-link">{label}</a>)}
-          </nav>
-          <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "header_desktop" })} className="header-cta button-gold hidden lg:inline-flex">Peça pelo WhatsApp</a>
-          <button onClick={() => setMenuOpen(!menuOpen)} className="grid h-11 w-11 place-items-center rounded-full border border-[#5A3428]/15 lg:hidden" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen}>
-            <Icon name={menuOpen ? "close" : "menu"} />
-          </button>
-        </div>
-        {menuOpen && (
-          <div className="border-t border-[#5A3428]/10 bg-[#FFF9F0] px-4 pb-6 pt-3 md:px-6 lg:hidden">
-            <nav className="flex flex-col">
-              {nav.map(([label, href]) => <a key={href} href={href} onClick={() => setMenuOpen(false)} className="border-b border-[#5A3428]/10 py-3.5 font-medium">{label}</a>)}
-              <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "header_mobile" })} className="button-gold mt-4 justify-center">Peça pelo WhatsApp</a>
-            </nav>
-          </div>
-        )}
-      </header>
+      <SiteHeader variant="home" />
 
       <main>
         <section id="inicio" className="relative px-5 pb-24 pt-32 md:pb-36 lg:px-8 lg:pt-40">
           <div className="pointer-events-none absolute -left-28 top-20 h-80 w-80 rounded-full bg-[#D9A83E]/10 blur-3xl" />
           <div className="mx-auto max-w-7xl">
             <div className="mb-10 max-w-3xl lg:mb-14">
-              <div className="mb-6 flex flex-wrap items-center gap-4">
+              <div className="mb-6">
                 <p className="eyebrow">Doces artesanais & buffet</p>
-                <span className="premium-badge">Feito à mão, com carinho</span>
               </div>
               <h1 className="tech-title">
                 <span className="sr-only">Chocolícia – doces, bolos e buffet para festas em Niterói e região</span>
@@ -380,11 +334,11 @@ export default function Home() {
                 />
                 </span>
               </h1>
-              <div className="mt-7 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="mt-7 flex flex-col items-center gap-5 text-center">
                 <p className="max-w-xl text-xl leading-relaxed text-[#8A5A44] md:text-2xl">Momentos especiais merecem sabores inesquecíveis.</p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap justify-center gap-3">
                   <a href="#doces" className="button-outline">Conheça nossos doces</a>
-                  <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "hero" })} className="button-gold button-primary">Solicitar orçamento</a>
+                  <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "hero" })} className="button-gold button-primary">Solicite orçamento</a>
                 </div>
               </div>
               <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium tracking-wide text-[#8A5A44]">
@@ -404,6 +358,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <HomePromotionBanner />
+        <RecentRecipesSection />
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
         <section id="sobre" data-reveal className="reveal scroll-mt-20 bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
@@ -441,6 +398,18 @@ export default function Home() {
               </div>
               <a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: "about" })} className="mt-6 inline-flex items-center gap-2 font-semibold text-[#5A3428] underline decoration-[#D9A83E] decoration-2 underline-offset-8">Conte-nos sobre o seu momento <Icon name="arrow" /></a>
             </div>
+          </div>
+        </section>
+
+        <div className="section-ornament" aria-hidden="true"><span /></div>
+        <section id="catalogo" data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="section-heading">
+              <div><p className="eyebrow mb-3">Catálogo vivo</p><h2 className="section-title">Novidades que chegam primeiro aqui</h2></div>
+              <p className="max-w-md text-[#8A5A44]">Imagens enviadas pela Chocolícia ficam disponíveis em uma galeria segura e atualizada.</p>
+            </div>
+            <CatalogGallery />
+            <CatalogManager />
           </div>
         </section>
 
@@ -501,7 +470,18 @@ export default function Home() {
                   color="#5A3428"
                   tilt
                   glare
-                  front={<div className="flip-product-front"><div className="overflow-hidden"><img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" /></div><div className="p-5 md:p-6"><p className="eyebrow mb-3">Feito sob encomenda</p><h3 className="font-display text-3xl">{title}</h3><p className="mt-2 text-sm leading-7 text-[#8A5A44]">Toque para descobrir</p></div></div>}
+                  front={
+                    <div className="flip-product-front">
+                      <div className="flip-product-image">
+                        <img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flip-product-content p-5 md:p-6">
+                        <p className="eyebrow mb-3">Feito sob encomenda</p>
+                        <h3 className="flip-product-title font-display line-clamp-2">{title}</h3>
+                        <p className="mt-2 text-sm leading-7 text-[#8A5A44]">Toque para descobrir</p>
+                      </div>
+                    </div>
+                  }
                   back={<div className="flip-product-back"><span className="premium-badge">Detalhes do pedido</span><h3 className="font-display mt-4 text-4xl">{title}</h3><p className="mt-2 text-base leading-7 text-[#8A5A44]">{text}</p><a href={productWhatsApp(message)} target="_blank" rel="noreferrer" onClick={() => trackAnalytics("whatsapp_click", { placement: `product_${title.toLowerCase().replaceAll(" ", "_")}` })} className="button-gold mt-4 w-full">Quero este</a><small className="mt-3 block text-center text-xs uppercase tracking-[.16em] text-[#8A5A44]">WhatsApp com mensagem pronta</small></div>}
                 />
               ))}
@@ -547,18 +527,6 @@ export default function Home() {
         </section>
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
-        <section id="catalogo" data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="section-heading">
-              <div><p className="eyebrow mb-3">Catálogo vivo</p><h2 className="section-title">Novidades que chegam primeiro aqui</h2></div>
-              <p className="max-w-md text-[#8A5A44]">Imagens enviadas pela Chocolícia ficam disponíveis em uma galeria segura e atualizada.</p>
-            </div>
-            <CatalogGallery />
-            <CatalogManager />
-          </div>
-        </section>
-
-        <div className="section-ornament" aria-hidden="true"><span /></div>
         <section id="servicos" className="bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-7xl">
             <p className="eyebrow mb-3">Chocolícia em Niterói e no RJ</p>
@@ -576,6 +544,7 @@ export default function Home() {
         <FAQSection />
 
         <QuoteSection />
+        <ReviewsSection />
 
         <section id="contato" data-reveal className="reveal scroll-mt-20 bg-[#3A241D] px-4 py-12 text-center text-[#FFF9F0] md:px-6 md:py-16 lg:px-8 lg:py-20">
           <div className="mx-auto max-w-4xl">
@@ -588,43 +557,18 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-28 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-28 lg:px-8">
-        <div className="site-footer-inner mx-auto max-w-7xl">
-          <div className="site-footer-brand">
-            <a href="#inicio" className="footer-brand-lockup" aria-label="Chocolícia — início"><img src={logo} alt="" /><span className="font-display text-3xl text-[#FFF9F0]">Chocolícia</span></a>
-            <p>Doces artesanais para celebrar com afeto.</p>
-          </div>
-          <nav className="site-footer-nav" aria-label="Links essenciais">
-            <p className="footer-kicker">Navegação</p>
-            <a href="#inicio">Início</a>
-            <a href="#buffet">Serviços & Buffet</a>
-            <a href="#orcamento">Orçamento</a>
-          </nav>
-          <div className="site-footer-contact">
-            <p className="footer-kicker">Contato</p>
-            <p>Niterói, Rio de Janeiro</p>
-            <a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "home_footer" })}>{SITE.whatsappDisplay}</a>
-            <a href={`mailto:${officialEmail}`}>{officialEmail}</a>
-          </div>
-          <div className="site-footer-social">
-            <p className="footer-kicker">Redes sociais</p>
-            <SocialLinks className="mt-4" placement="footer_social_icons" />
-          </div>
-        </div>
-        <div className="site-footer-bottom mx-auto mt-8 max-w-7xl"><span>© 2026 Chocolícia</span><span>Feito à mão, com carinho.</span><span className="footer-legal-links"><a href="/politicas-e-termos#privacidade">Privacidade</a><a href="/politicas-e-termos#termos">Termos de Uso</a></span></div>
-      </footer>
+      <SiteFooter variant="home" />
 
       <Dock items={[
         { icon: <House size={18} />, label: "Início", onClick: () => document.getElementById("inicio")?.scrollIntoView({ behavior: "smooth" }) },
         { icon: <Instagram size={18} />, label: "Instagram", onClick: () => { trackAnalytics("instagram_click", { placement: "dock" }); window.open(instagram, "_blank", "noopener,noreferrer"); } },
+        { icon: <BookOpen size={18} />, label: "Receitas", onClick: () => { window.location.href = "/receitas"; } },
         { icon: <CakeSlice size={18} />, label: "Produtos", onClick: () => document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" }) },
         { icon: <Facebook size={18} />, label: "Facebook", onClick: () => { trackAnalytics("facebook_click", { placement: "dock" }); window.open(facebook, "_blank", "noopener,noreferrer"); } },
         { icon: <Music2 size={18} />, label: "TikTok", onClick: () => { trackAnalytics("tiktok_click", { placement: "dock" }); window.open(tiktok, "_blank", "noopener,noreferrer"); } },
         { icon: <MessageCircle size={18} />, label: "Contato", onClick: () => document.getElementById("contato")?.scrollIntoView({ behavior: "smooth" }) },
       ]} panelHeight={68} baseItemSize={48} magnification={64} />
-      <a href={whatsapp} target="_blank" rel="noreferrer" aria-label="Solicitar orçamento pelo WhatsApp" onClick={() => trackEvent("whatsapp_click", { placement: "floating_button" })} className="fixed bottom-24 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-xl lg:bottom-8 lg:right-8">
-        <MessageCircle className="h-7 w-7" aria-hidden="true" />
-      </a>
+      <FloatingWhatsApp label="Solicitar orçamento pelo WhatsApp" />
       {lightbox && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-[#3A241D]/95 p-4" role="dialog" aria-modal="true" aria-label={lightbox[1]} onClick={() => setLightbox(null)}>
           <button onClick={() => setLightbox(null)} className="absolute right-5 top-5 grid h-12 w-12 place-items-center rounded-full bg-white/10 text-white" aria-label="Fechar imagem"><Icon name="close" /></button>

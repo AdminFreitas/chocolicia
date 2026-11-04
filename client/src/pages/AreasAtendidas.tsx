@@ -195,7 +195,7 @@ export default function AreasAtendidas() {
             <a href="/doces-para-festas" className="hover:text-[#FFF9F0] transition">Doces</a>
           </nav>
         </div>
-        <p className="mt-6 text-center text-xs">© 2026 Chocolícia. Feito à mão, com carinho.</p>
+        <p className="mt-6 text-center text-xs">© 2026 Chocolícia.</p>
       </footer>
 
       <a

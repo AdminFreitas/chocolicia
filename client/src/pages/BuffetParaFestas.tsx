@@ -233,7 +233,7 @@ export default function BuffetParaFestas() {
             <a href="/areas-atendidas" className="hover:text-[#FFF9F0] transition">Áreas Atendidas</a>
           </nav>
         </div>
-        <p className="mt-6 text-center text-xs">© 2026 Chocolícia. Feito à mão, com carinho.</p>
+        <p className="mt-6 text-center text-xs">© 2026 Chocolícia.</p>
       </footer>
 
       {/* Botão flutuante WhatsApp */}

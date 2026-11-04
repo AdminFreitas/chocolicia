@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { STATIC_CATALOG_IMAGES } from "@/data/staticCatalogFallback";
 import { trpc } from "@/lib/trpc";
-import { ImagePlus, Loader2, UploadCloud } from "lucide-react";
+import { ImagePlus, Loader2, Sparkles, UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
 
 const isPrerender = typeof window === "undefined";
@@ -39,22 +39,48 @@ export function CatalogGallery({ compact = false }: CatalogGalleryProps) {
     initialData: isPrerender ? staticCatalogFallback : undefined,
   });
   const images: CatalogImage[] = query.data ?? (isPrerender ? staticCatalogFallback : []);
+  const orderedImages = [...images].sort((left, right) => {
+    const leftDate = left.createdAt instanceof Date ? left.createdAt.getTime() : Date.parse(String(left.createdAt));
+    const rightDate = right.createdAt instanceof Date ? right.createdAt.getTime() : Date.parse(String(right.createdAt));
+    return (Number.isFinite(rightDate) ? rightDate : 0) - (Number.isFinite(leftDate) ? leftDate : 0);
+  });
+  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
   return (
     <div className={compact ? "catalog-gallery catalog-gallery-compact" : "catalog-gallery"}>
-      {images.length > 0 ? (
+      <div className="catalog-gallery-spotlight">
+        <div className="catalog-gallery-spotlight-copy">
+          <span className="catalog-gallery-spotlight-icon"><Sparkles size={18} aria-hidden="true" /></span>
+          <div>
+            <strong>Novidades em destaque</strong>
+            <p>As imagens mais recentes aparecem primeiro e recebem um selo especial.</p>
+          </div>
+        </div>
+        <span className="catalog-gallery-count">{orderedImages.length} {orderedImages.length === 1 ? "imagem" : "imagens"}</span>
+      </div>
+      {orderedImages.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
-          {images.map((image) => (
-            <figure key={image.id} className="catalog-image-card">
-              <img src={image.url} alt={image.alt} loading="lazy" />
-              <figcaption>{image.alt}</figcaption>
-            </figure>
-          ))}
+          {orderedImages.map((image, index) => {
+            const timestamp = image.createdAt instanceof Date ? image.createdAt.getTime() : Date.parse(String(image.createdAt));
+            const isRecent = Number.isFinite(timestamp) && timestamp >= recentCutoff && timestamp <= Date.now();
+            const className = [
+              "catalog-image-card",
+              isRecent ? "catalog-image-card--recent" : "",
+              isRecent && index === 0 ? "catalog-image-card--featured" : "",
+            ].filter(Boolean).join(" ");
+            return (
+              <figure key={image.id} className={className}>
+                {isRecent && <span className="catalog-image-new-badge"><Sparkles size={13} aria-hidden="true" /> Nova imagem</span>}
+                <img src={image.url} alt={image.alt} loading="lazy" />
+                <figcaption>{image.alt}</figcaption>
+              </figure>
+            );
+          })}
         </div>
       ) : (
         <div className="catalog-empty">
-          <ImagePlus className="h-5 w-5 text-[#D9A83E]" />
-          <span>As novas imagens do catálogo aparecerão aqui.</span>
+          <span className="catalog-empty-icon"><ImagePlus className="h-6 w-6" aria-hidden="true" /></span>
+          <div><strong>Novidades a caminho</strong><p>As imagens enviadas pela Chocolícia serão destacadas aqui assim que forem publicadas.</p></div>
         </div>
       )}
     </div>
