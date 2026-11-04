@@ -1,0 +1,224 @@
+.home-promo-banner {
+  padding: 0 1.25rem 2rem;
+}
+
+.home-promo-banner__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(15rem, 0.9fr) auto;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding: 1.5rem 1.75rem;
+  overflow: hidden;
+  color: #fff9f0;
+  background: linear-gradient(115deg, #3a241d 0%, #5a3428 70%, #6b3e2e 100%);
+  border: 1px solid rgb(217 168 62 / 58%);
+  border-radius: 1.5rem;
+  box-shadow: 0 16px 40px rgb(58 36 29 / 15%);
+}
+
+.home-promo-banner__inner::after {
+  position: absolute;
+  right: -4rem;
+  bottom: -7rem;
+  width: 17rem;
+  height: 17rem;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(217 168 62 / 19%), transparent 68%);
+}
+
+.home-promo-banner__copy,
+.home-promo-banner__timer,
+.home-promo-banner__cta {
+  position: relative;
+  z-index: 1;
+}
+
+.home-promo-banner__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.4rem;
+  color: #f3cd73;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.home-promo-banner__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.home-promo-banner__copy h2 {
+  margin: 0;
+  color: #fff9f0;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(1.45rem, 2.4vw, 2rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.home-promo-banner__discount {
+  flex: none;
+  padding: 0.38rem 0.62rem;
+  color: #3a241d;
+  background: #f3cd73;
+  border: 1px solid #fff0bd;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.home-promo-banner__description {
+  max-width: 34rem;
+  margin: 0.55rem 0 0;
+  color: #f3e5d0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.home-promo-banner__timer {
+  justify-self: center;
+  width: 100%;
+  max-width: 20rem;
+}
+
+.home-promo-banner__units {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.home-promo-banner__unit {
+  display: flex;
+  min-height: 4rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(243 205 115 / 45%);
+  border-radius: 0.8rem;
+  background: rgb(255 249 240 / 8%);
+}
+
+.home-promo-banner__unit strong {
+  color: #f3cd73;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-promo-banner__unit span {
+  margin-top: 0.35rem;
+  color: #fff9f0;
+  font-size: 0.65rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.home-promo-banner__deadline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  color: #f3e5d0;
+  font-size: 0.72rem;
+}
+
+.home-promo-banner__ended {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid rgb(243 205 115 / 45%);
+  border-radius: 0.8rem;
+  color: #f3cd73;
+  text-align: center;
+}
+
+.home-promo-banner__cta {
+  display: inline-flex;
+  min-height: 3.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.95rem 1.55rem;
+  color: #3a241d;
+  background: linear-gradient(135deg, #fff0bd 0%, #f3cd73 55%, #d9a83e 100%);
+  border: 2px solid #fff0bd;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgb(243 205 115 / 18%), 0 12px 30px rgb(217 168 62 / 36%);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.home-promo-banner__cta:hover {
+  background: linear-gradient(135deg, #fff9e8 0%, #fff0bd 55%, #f3cd73 100%);
+  box-shadow: 0 0 0 5px rgb(243 205 115 / 25%), 0 16px 34px rgb(217 168 62 / 48%);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.home-promo-banner__cta svg { transition: transform 180ms ease; }
+.home-promo-banner__cta:hover svg { transform: translateX(3px); }
+
+.home-promo-banner__cta:focus-visible {
+  outline: 3px solid #fff9f0;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .home-promo-banner__inner {
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.8fr);
+  }
+
+  .home-promo-banner__cta {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-promo-banner {
+    padding: 0 1rem 1.5rem;
+  }
+
+  .home-promo-banner__inner {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 1.2rem;
+  }
+
+  .home-promo-banner__description {
+    font-size: 0.88rem;
+  }
+
+  .home-promo-banner__timer {
+    max-width: none;
+  }
+
+  .home-promo-banner__cta {
+    width: 100%;
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-promo-banner__cta {
+    transition: none;
+  }
+
+  .home-promo-banner__cta svg { transition: none; }
+}

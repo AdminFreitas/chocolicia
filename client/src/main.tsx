@@ -8,7 +8,7 @@ import {
 import { httpBatchLink } from "@trpc/client";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import superjson from "superjson";
-import App from "./App";
+import App from "./App.client";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -49,9 +49,11 @@ const app = (
   </trpc.Provider>
 );
 
-// Se houver HTML pré-renderizado no root, usa hydrateRoot para não piscar a tela.
-// Em desenvolvimento (vite dev), o root estará vazio → createRoot normal.
-if (rootElement.hasChildNodes()) {
+// O HTML de detalhe dinâmico é uma versão SEO estática; a aplicação React substitui-o após carregar.
+// Nas páginas pré-renderizadas de build, hydrateRoot preserva a marcação existente.
+if (rootElement.dataset.recipePrerendered === "true") {
+  createRoot(rootElement).render(app);
+} else if (rootElement.hasChildNodes()) {
   hydrateRoot(rootElement, app);
 } else {
   createRoot(rootElement).render(app);

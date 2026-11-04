@@ -157,7 +157,11 @@ button {
 .flip-card-inner { position: relative; width: 100%; height: 100%; transform-origin: center; transition: scale 260ms cubic-bezier(.23,1,.32,1); }
 .flip-card-face { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; border: 1px solid rgb(217 168 62 / 18%); border-radius: inherit; }
 .flip-card-front, .flip-card-back { display: flex; flex-direction: column; }
-.flip-card-front > div:first-child { height: 62%; }
+.flip-product-front { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.flip-product-image { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.flip-product-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.flip-product-content { box-sizing: border-box; display: flex; flex: 0 0 40%; flex-direction: column; justify-content: flex-end; min-height: 0; }
+.flip-product-title { min-height: 2.3em; font-size: clamp(1.45rem, 2.2vw, 1.9rem); line-height: 1.15; }
 .flip-card-front img { height: 100%; transition: transform 700ms cubic-bezier(.23,1,.32,1); }
 .flip-card:hover .flip-card-front img { transform: scale(1.035); }
 .flip-card-back { justify-content: center; padding: 2rem; transform-style: preserve-3d; }
@@ -280,15 +284,38 @@ button {
 .legal-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; border-top: 1px solid rgb(255 249 240 / 12%); color: rgb(255 249 240 / 48%); font-size: .68rem; }
 .legal-footer a:hover { color: #f3cd73; }
 .catalog-gallery { min-height: 12rem; }
+.catalog-gallery-spotlight { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; border: 1px solid rgb(217 168 62 / 36%); border-radius: 1rem; background: linear-gradient(105deg, rgb(243 205 115 / 25%), rgb(255 249 240 / 96%) 65%); padding: .9rem 1.1rem; box-shadow: 0 10px 26px rgb(58 36 29 / 6%); }
+.catalog-gallery-spotlight-copy { display: flex; min-width: 0; align-items: center; gap: .8rem; }
+.catalog-gallery-spotlight-icon { display: grid; width: 2.45rem; height: 2.45rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #d9a83e; color: #3a241d; }
+.catalog-gallery-spotlight strong { display: block; color: #5a3428; font-family: "Playfair Display", serif; font-size: .98rem; }
+.catalog-gallery-spotlight p { margin-top: .15rem; color: #8a5a44; font-size: .72rem; line-height: 1.45; }
+.catalog-gallery-count { flex: 0 0 auto; border: 1px solid rgb(90 52 40 / 14%); border-radius: 999px; background: rgb(255 249 240 / 88%); padding: .4rem .7rem; color: #5a3428; font-size: .68rem; font-weight: 700; }
 .catalog-image-card { position: relative; overflow: hidden; min-height: 15rem; border: 1px solid rgb(217 168 62 / 20%); border-radius: 1rem; background: #fff9f0; box-shadow: 0 16px 40px rgb(58 36 29 / 8%); }
+.catalog-image-card--recent { border-color: rgb(217 168 62 / 78%); box-shadow: 0 18px 48px rgb(90 52 40 / 15%), 0 0 0 2px rgb(217 168 62 / 13%); }
+.catalog-image-card--featured { border-width: 2px; }
+.catalog-image-new-badge { position: absolute; top: .8rem; left: .8rem; z-index: 1; display: inline-flex; align-items: center; gap: .35rem; border: 1px solid rgb(255 249 240 / 68%); border-radius: 999px; background: #d9a83e; padding: .45rem .7rem; color: #3a241d; font-size: .66rem; font-weight: 800; box-shadow: 0 5px 16px rgb(58 36 29 / 20%); }
 .catalog-image-card img { height: 17rem; width: 100%; object-fit: cover; transition: transform 500ms cubic-bezier(.23,1,.32,1); }
+.catalog-image-card--featured img { height: 21rem; }
 .catalog-image-card:hover img { transform: scale(1.04); }
 .catalog-image-card figcaption { position: absolute; right: .75rem; bottom: .75rem; left: .75rem; border: 1px solid rgb(255 249 240 / 22%); border-radius: .65rem; background: rgb(58 36 29 / 78%); padding: .55rem .7rem; color: #fff9f0; font-size: .7rem; line-height: 1.35; backdrop-filter: blur(8px); }
-.catalog-empty { display: flex; min-height: 12rem; align-items: center; justify-content: center; gap: .65rem; border: 1px dashed rgb(217 168 62 / 48%); border-radius: 1rem; color: #8a5a44; font-size: .8rem; text-align: center; }
+.catalog-empty { display: flex; min-height: 14rem; align-items: center; justify-content: center; gap: 1rem; border: 1px dashed rgb(217 168 62 / 58%); border-radius: 1rem; background: linear-gradient(120deg, rgb(243 205 115 / 15%), rgb(255 249 240 / 96%) 62%); padding: 1.5rem; color: #8a5a44; font-size: .8rem; text-align: left; }
+.catalog-empty-icon { display: grid; width: 3.4rem; height: 3.4rem; flex: 0 0 auto; place-items: center; border: 1px solid rgb(217 168 62 / 45%); border-radius: 50%; background: rgb(217 168 62 / 18%); color: #d9a83e; }
+.catalog-empty strong { display: block; color: #5a3428; font-family: "Playfair Display", serif; font-size: 1.1rem; }
+.catalog-empty p { max-width: 28rem; margin-top: .35rem; color: #8a5a44; font-size: .72rem; line-height: 1.6; }
 .catalog-manager { border: 1px solid rgb(217 168 62 / 28%); border-radius: 1rem; background: rgb(255 249 240 / 78%); padding: 1.2rem; box-shadow: 0 14px 36px rgb(58 36 29 / 7%); }
 .catalog-upload-field { display: flex; min-width: 0; flex-direction: column; gap: .45rem; color: #5a3428; font-size: .72rem; font-weight: 600; }
 .catalog-upload-field input { min-width: 0; border: 1px solid rgb(90 52 40 / 18%); border-radius: .65rem; background: #fff9f0; padding: .8rem .85rem; color: #5a3428; font: inherit; font-size: .76rem; font-weight: 400; }
 .catalog-upload-field input:focus { border-color: #d9a83e; outline: 0; box-shadow: 0 0 0 3px rgb(217 168 62 / 14%); }
+
+@media (min-width: 1024px) {
+  .catalog-image-card--featured { grid-column: span 2; }
+  .catalog-image-card--featured img { height: 24rem; }
+}
+@media (max-width: 640px) {
+  .catalog-gallery-spotlight { align-items: flex-start; flex-direction: column; }
+  .catalog-gallery-count { margin-left: 3.25rem; }
+  .catalog-empty { flex-direction: column; text-align: center; }
+}
 
 .no-scrollbar {
   scrollbar-width: none;
@@ -548,4 +575,27 @@ button {
 }
 @media (min-width: 768px) {
   .faq-item { padding: 1.25rem; }
+}
+
+.recipe-card { transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease; }
+.recipe-card:hover { transform: translateY(-3px); border-color: rgb(217 168 62 / 48%); box-shadow: 0 22px 55px rgb(58 36 29 / 12%); }
+.recipe-card-compact { box-shadow: 0 10px 30px rgb(58 36 29 / 6%); }
+.recipe-category-chip { background: linear-gradient(135deg, rgb(58 36 29 / 92%), rgb(217 168 62 / 38%)); }
+.recipe-filter { flex: 0 0 auto; border: 1px solid rgb(90 52 40 / 22%); border-radius: 999px; background: rgb(255 249 240 / 80%); padding: .65rem .95rem; color: #5a3428; font-size: .72rem; font-weight: 500; transition: background 180ms ease, color 180ms ease, border-color 180ms ease; }
+.recipe-filter:hover { border-color: #8a5a44; }
+.recipe-filter.is-active { border-color: #d9a83e; background: #d9a83e; color: #3a241d; }
+.recipe-skeleton { animation: recipe-pulse 1.5s ease-in-out infinite; background: linear-gradient(100deg, #f3e5d0 20%, #fff9f0 40%, #f3e5d0 60%); background-size: 200% 100%; }
+@keyframes recipe-pulse { to { background-position-x: -200%; } }
+.recipe-card:focus-visible, .recipe-filter:focus-visible, .faq-item summary:focus-visible { outline: 2px solid #d9a83e; outline-offset: 3px; }
+@media print {
+  header, footer, .dock, .recipe-card, button, .whatsapp-floating { display: none !important; }
+  .recipe-header-spacer { display: none !important; }
+  button[role="checkbox"] { display: inline-grid !important; }
+  body, :root { background: white !important; color: black !important; }
+  main { padding: 0 !important; }
+  .recipe-skeleton { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-card { transition: none; }
+  .recipe-skeleton { animation: none; background: #f3e5d0; }
 }
