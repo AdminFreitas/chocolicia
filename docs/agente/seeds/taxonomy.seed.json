@@ -1,0 +1,849 @@
+{
+  "version": "1.0.0",
+  "generated_from": "04-ESTRUTURA-CONTEUDO.md v0.2 (secoes 5, 6, 7 e 15)",
+  "notes": [
+    "agent_enabled comeca falso em todas as subcategorias; so a fase em vigor habilita (04, secao 5.3).",
+    "latex-natural e moluscos tem source to_confirm: conferir na norma vigente da Anvisa antes de producao.",
+    "Etiquetas sem-gluten e sem-lactose existem desabilitadas (enabled false) nas Fases 1 e 2."
+  ],
+  "phase_allows_risk": {
+    "0": [
+      "low"
+    ],
+    "1": [
+      "low"
+    ],
+    "2": [
+      "low",
+      "medium"
+    ],
+    "3": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "categories": [
+    {
+      "slug": "bolos-e-tortas",
+      "name": "Bolos e tortas",
+      "sort_order": 1,
+      "subcategories": [
+        {
+          "slug": "bolos-simples",
+          "name": "Bolos simples",
+          "sort_order": 1,
+          "risk_level": "low",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bolos-recheados-e-cobertos",
+          "name": "Bolos recheados e cobertos",
+          "sort_order": 2,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bolos-de-festa",
+          "name": "Bolos de festa",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bolos-de-pote",
+          "name": "Bolos de pote",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "tortas-doces",
+          "name": "Tortas doces",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "tortas-salgadas",
+          "name": "Tortas salgadas",
+          "sort_order": 6,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "cheesecakes",
+          "name": "Cheesecakes",
+          "sort_order": 7,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "carnes",
+      "name": "Carnes",
+      "sort_order": 2,
+      "subcategories": [
+        {
+          "slug": "bovina",
+          "name": "Bovina",
+          "sort_order": 1,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "suina",
+          "name": "Suína",
+          "sort_order": 2,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "assados-e-churrasco",
+          "name": "Assados e churrasco",
+          "sort_order": 3,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "carne-moida",
+          "name": "Carne moída",
+          "sort_order": 4,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "carnes-de-panela",
+          "name": "Carnes de panela",
+          "sort_order": 5,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "embutidos-e-linguicas",
+          "name": "Embutidos e linguiças",
+          "sort_order": 6,
+          "risk_level": "high",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "aves",
+      "name": "Aves",
+      "sort_order": 3,
+      "subcategories": [
+        {
+          "slug": "frango-assado",
+          "name": "Frango assado",
+          "sort_order": 1,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "frango-frito-e-empanado",
+          "name": "Frango frito e empanado",
+          "sort_order": 2,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "frango-de-panela",
+          "name": "Frango de panela",
+          "sort_order": 3,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "peito-de-frango",
+          "name": "Peito de frango",
+          "sort_order": 4,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "frango-desfiado",
+          "name": "Frango desfiado",
+          "sort_order": 5,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "frango-cremoso",
+          "name": "Frango cremoso",
+          "sort_order": 6,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "peru-e-chester",
+          "name": "Peru e chester",
+          "sort_order": 7,
+          "risk_level": "high",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "peixes-e-frutos-do-mar",
+      "name": "Peixes e frutos do mar",
+      "sort_order": 4,
+      "subcategories": [
+        {
+          "slug": "peixes-assados",
+          "name": "Peixes assados",
+          "sort_order": 1,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "peixes-fritos",
+          "name": "Peixes fritos",
+          "sort_order": 2,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "moquecas",
+          "name": "Moquecas",
+          "sort_order": 3,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "camarao",
+          "name": "Camarão",
+          "sort_order": 4,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "lula-e-polvo",
+          "name": "Lula e polvo",
+          "sort_order": 5,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "mariscos",
+          "name": "Mariscos",
+          "sort_order": 6,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bacalhau",
+          "name": "Bacalhau",
+          "sort_order": 7,
+          "risk_level": "high",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "saladas-e-molhos",
+      "name": "Saladas e molhos",
+      "sort_order": 5,
+      "subcategories": [
+        {
+          "slug": "saladas-verdes",
+          "name": "Saladas verdes",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "saladas-de-legumes",
+          "name": "Saladas de legumes",
+          "sort_order": 2,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "saladas-com-proteina",
+          "name": "Saladas com proteína",
+          "sort_order": 3,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "saladas-de-massa-e-graos",
+          "name": "Saladas de massa e grãos",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "molhos-para-salada",
+          "name": "Molhos para salada",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "molhos-quentes",
+          "name": "Molhos quentes",
+          "sort_order": 6,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "molhos-para-carnes",
+          "name": "Molhos para carnes",
+          "sort_order": 7,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "maioneses-e-pastas",
+          "name": "Maioneses e pastas",
+          "sort_order": 8,
+          "risk_level": "high",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "sopas",
+      "name": "Sopas",
+      "sort_order": 6,
+      "subcategories": [
+        {
+          "slug": "caldos",
+          "name": "Caldos",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sopas-cremosas",
+          "name": "Sopas cremosas",
+          "sort_order": 2,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sopas-de-legumes",
+          "name": "Sopas de legumes",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sopas-com-carne",
+          "name": "Sopas com carne",
+          "sort_order": 4,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sopas-leves",
+          "name": "Sopas leves",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "massas",
+      "name": "Massas",
+      "sort_order": 7,
+      "subcategories": [
+        {
+          "slug": "macarrao-ao-molho",
+          "name": "Macarrão ao molho",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "lasanhas-e-gratinados",
+          "name": "Lasanhas e gratinados",
+          "sort_order": 2,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "massas-recheadas",
+          "name": "Massas recheadas",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "massas-caseiras",
+          "name": "Massas caseiras",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "molhos-para-massa",
+          "name": "Molhos para massa",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "nhoque",
+          "name": "Nhoque",
+          "sort_order": 6,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "massas-frias",
+          "name": "Massas frias",
+          "sort_order": 7,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "bebidas",
+      "name": "Bebidas",
+      "sort_order": 8,
+      "subcategories": [
+        {
+          "slug": "sucos",
+          "name": "Sucos",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sucos-detox",
+          "name": "Sucos detox",
+          "sort_order": 2,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "vitaminas-e-smoothies",
+          "name": "Vitaminas e smoothies",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "chas",
+          "name": "Chás",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bebidas-quentes",
+          "name": "Bebidas quentes",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "bebidas-geladas-e-cremosas",
+          "name": "Bebidas geladas e cremosas",
+          "sort_order": 6,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "drinks-sem-alcool",
+          "name": "Drinks sem álcool",
+          "sort_order": 7,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "drinks-com-alcool",
+          "name": "Drinks com álcool",
+          "sort_order": 8,
+          "risk_level": "high",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "doces-e-sobremesas",
+      "name": "Doces e sobremesas",
+      "sort_order": 9,
+      "subcategories": [
+        {
+          "slug": "brigadeiros-e-docinhos",
+          "name": "Brigadeiros e docinhos",
+          "sort_order": 1,
+          "risk_level": "low",
+          "agent_enabled": false
+        },
+        {
+          "slug": "trufas-e-bombons",
+          "name": "Trufas e bombons",
+          "sort_order": 2,
+          "risk_level": "low",
+          "agent_enabled": false
+        },
+        {
+          "slug": "pudins-e-flans",
+          "name": "Pudins e flans",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "mousses",
+          "name": "Mousses",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "sorvetes-e-geladinhos",
+          "name": "Sorvetes e geladinhos",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "doces-de-colher",
+          "name": "Doces de colher",
+          "sort_order": 6,
+          "risk_level": "low",
+          "agent_enabled": false
+        },
+        {
+          "slug": "paves-e-sobremesas-geladas",
+          "name": "Pavês e sobremesas geladas",
+          "sort_order": 7,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "doces-regionais",
+          "name": "Doces regionais",
+          "sort_order": 8,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "panetones-e-chocotones",
+          "name": "Panetones e chocotones",
+          "sort_order": 9,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "lanches",
+      "name": "Lanches",
+      "sort_order": 10,
+      "subcategories": [
+        {
+          "slug": "sanduiches",
+          "name": "Sanduíches",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "salgados-assados",
+          "name": "Salgados assados",
+          "sort_order": 2,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "salgados-fritos",
+          "name": "Salgados fritos",
+          "sort_order": 3,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "paes-e-recheios",
+          "name": "Pães e recheios",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "pizzas",
+          "name": "Pizzas",
+          "sort_order": 5,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "lanches-rapidos",
+          "name": "Lanches rápidos",
+          "sort_order": 6,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    },
+    {
+      "slug": "alimentacao-saudavel",
+      "name": "Alimentação saudável",
+      "sort_order": 11,
+      "subcategories": [
+        {
+          "slug": "receitas-leves",
+          "name": "Receitas leves",
+          "sort_order": 1,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "fit-e-low-carb",
+          "name": "Fit e low carb",
+          "sort_order": 2,
+          "risk_level": "high",
+          "agent_enabled": false
+        },
+        {
+          "slug": "poucos-ingredientes",
+          "name": "Poucos ingredientes",
+          "sort_order": 3,
+          "risk_level": "medium",
+          "agent_enabled": false
+        },
+        {
+          "slug": "refeicoes-completas",
+          "name": "Refeições completas",
+          "sort_order": 4,
+          "risk_level": "medium",
+          "agent_enabled": false
+        }
+      ]
+    }
+  ],
+  "tags": {
+    "occasion": [
+      {
+        "slug": "festas",
+        "name": "Festas",
+        "enabled": true
+      },
+      {
+        "slug": "aniversario",
+        "name": "Aniversário",
+        "enabled": true
+      },
+      {
+        "slug": "carnaval",
+        "name": "Carnaval",
+        "enabled": true
+      },
+      {
+        "slug": "pascoa",
+        "name": "Páscoa",
+        "enabled": true
+      },
+      {
+        "slug": "quaresma",
+        "name": "Quaresma",
+        "enabled": true
+      },
+      {
+        "slug": "dia-das-maes",
+        "name": "Dia das Mães",
+        "enabled": true
+      },
+      {
+        "slug": "festa-junina",
+        "name": "Festa junina",
+        "enabled": true
+      },
+      {
+        "slug": "dia-dos-namorados",
+        "name": "Dia dos Namorados",
+        "enabled": true
+      },
+      {
+        "slug": "dia-dos-pais",
+        "name": "Dia dos Pais",
+        "enabled": true
+      },
+      {
+        "slug": "dia-das-criancas",
+        "name": "Dia das Crianças",
+        "enabled": true
+      },
+      {
+        "slug": "natal",
+        "name": "Natal",
+        "enabled": true
+      },
+      {
+        "slug": "ano-novo",
+        "name": "Ano-Novo",
+        "enabled": true
+      }
+    ],
+    "diet": [
+      {
+        "slug": "vegetariana",
+        "name": "Vegetariana",
+        "enabled": true
+      },
+      {
+        "slug": "vegana",
+        "name": "Vegana",
+        "enabled": true
+      },
+      {
+        "slug": "sem-gluten",
+        "name": "Sem glúten",
+        "enabled": false
+      },
+      {
+        "slug": "sem-lactose",
+        "name": "Sem lactose",
+        "enabled": false
+      }
+    ],
+    "collection": [
+      {
+        "slug": "chocolate",
+        "name": "Chocolate",
+        "enabled": true
+      },
+      {
+        "slug": "datas-especiais",
+        "name": "Datas especiais",
+        "enabled": true
+      },
+      {
+        "slug": "festas-e-buffet",
+        "name": "Festas e buffet",
+        "enabled": true
+      },
+      {
+        "slug": "receitas-rapidas",
+        "name": "Receitas rápidas",
+        "enabled": true
+      }
+    ]
+  },
+  "allergens": [
+    {
+      "slug": "gluten",
+      "name": "Glúten (trigo, centeio, cevada, aveia e híbridos)",
+      "source": "official"
+    },
+    {
+      "slug": "leite",
+      "name": "Leite e derivados",
+      "source": "official"
+    },
+    {
+      "slug": "ovos",
+      "name": "Ovos e derivados",
+      "source": "official"
+    },
+    {
+      "slug": "soja",
+      "name": "Soja e derivados",
+      "source": "official"
+    },
+    {
+      "slug": "amendoim",
+      "name": "Amendoim e derivados",
+      "source": "official"
+    },
+    {
+      "slug": "castanhas",
+      "name": "Castanhas (amêndoa, avelã, castanha-de-caju, castanha-do-brasil, macadâmia, noz, pecã, pistache)",
+      "source": "official"
+    },
+    {
+      "slug": "peixes",
+      "name": "Peixes e derivados",
+      "source": "official"
+    },
+    {
+      "slug": "crustaceos",
+      "name": "Crustáceos",
+      "source": "official"
+    },
+    {
+      "slug": "latex-natural",
+      "name": "Látex natural",
+      "source": "to_confirm"
+    },
+    {
+      "slug": "moluscos",
+      "name": "Moluscos",
+      "source": "to_confirm"
+    }
+  ],
+  "legacy_category_map": [
+    {
+      "legacy": "Bolos",
+      "category": "bolos-e-tortas",
+      "subcategory": "bolos-simples",
+      "collections": [],
+      "occasions": [],
+      "review": "reclassificar por receita se for recheado ou de festa"
+    },
+    {
+      "legacy": "Brigadeiros e docinhos",
+      "category": "doces-e-sobremesas",
+      "subcategory": "brigadeiros-e-docinhos",
+      "collections": [],
+      "occasions": [],
+      "review": null
+    },
+    {
+      "legacy": "Tortas",
+      "category": "bolos-e-tortas",
+      "subcategory": "tortas-doces",
+      "collections": [],
+      "occasions": [],
+      "review": null
+    },
+    {
+      "legacy": "Sobremesas",
+      "category": "doces-e-sobremesas",
+      "subcategory": null,
+      "collections": [],
+      "occasions": [],
+      "review": "subcategoria a definir por receita"
+    },
+    {
+      "legacy": "Chocolates",
+      "category": "doces-e-sobremesas",
+      "subcategory": "trufas-e-bombons",
+      "collections": [
+        "chocolate"
+      ],
+      "occasions": [],
+      "review": null
+    },
+    {
+      "legacy": "Festas e buffet",
+      "category": null,
+      "subcategory": null,
+      "collections": [
+        "festas-e-buffet"
+      ],
+      "occasions": [
+        "festas"
+      ],
+      "review": "categoria principal sai do tipo de prato"
+    },
+    {
+      "legacy": "Datas especiais",
+      "category": null,
+      "subcategory": null,
+      "collections": [
+        "datas-especiais"
+      ],
+      "occasions": [],
+      "review": "categoria principal sai do tipo de prato; ocasiao conforme a data"
+    }
+  ]
+}
