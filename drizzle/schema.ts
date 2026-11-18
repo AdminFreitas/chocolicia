@@ -44,6 +44,8 @@ export const recipes = pgTable("recipes", {
   title: varchar("title", { length: 180 }).notNull(),
   excerpt: varchar("excerpt", { length: 160 }).notNull(),
   category: varchar("category", { length: 80 }).notNull(),
+  subcategory: varchar("subcategory", { length: 120 }),
+  subcategorySlug: varchar("subcategory_slug", { length: 120 }),
   tags: text("tags").array().notNull().default([]),
   coverImageUrl: text("cover_image_url").notNull(),
   coverImageAlt: varchar("cover_image_alt", { length: 240 }).notNull(),
@@ -68,6 +70,7 @@ export const recipes = pgTable("recipes", {
   uniqueIndex("recipes_slug_uidx").on(table.slug),
   index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()),
   index("recipes_category_idx").on(table.category),
+  index("recipes_subcategory_slug_idx").on(table.subcategorySlug),
 ]);
 
 export type User = typeof users.$inferSelect;
