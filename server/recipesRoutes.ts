@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
-import { recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
+import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
 import { getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
 
@@ -122,6 +122,15 @@ export function createRecipesRouter() {
       return;
     }
     const clean = sanitizeDeep(parsed.data);
+    if (clean.subcategorySlug) {
+      const subcategories = RECIPE_TAXONOMY[clean.category] ?? [];
+      const subcategory = subcategories.find((item) => item.slug === clean.subcategorySlug);
+      if (!subcategory) {
+        res.status(422).json({ error: "A subcategoria não pertence à categoria informada.", code: "invalid_subcategory" });
+        return;
+      }
+      clean.subcategory = subcategory.name;
+    }
     const imageUrl = new URL(clean.coverImageUrl);
     if (imageUrl.protocol !== "https:" && imageUrl.protocol !== "http:") {
       res.status(400).json({ error: "A imagem precisa de um URL HTTP ou HTTPS." });

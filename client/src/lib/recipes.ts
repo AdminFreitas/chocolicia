@@ -8,6 +8,16 @@ export const RECIPE_CATEGORIES = [
   "Datas especiais",
 ] as const;
 
+export const RECIPE_TAXONOMY = {
+  Bolos: [{ name: "Bolos de chocolate", slug: "bolos-de-chocolate" }, { name: "Bolos de aniversário", slug: "bolos-de-aniversario" }, { name: "Bolos caseiros", slug: "bolos-caseiros" }, { name: "Bolos recheados", slug: "bolos-recheados" }, { name: "Bolos especiais", slug: "bolos-especiais" }],
+  "Brigadeiros e docinhos": [{ name: "Brigadeiros", slug: "brigadeiros" }, { name: "Docinhos", slug: "docinhos" }],
+  Tortas: [{ name: "Tortas doces", slug: "tortas-doces" }],
+  Sobremesas: [{ name: "Mousses", slug: "mousses" }],
+  Chocolates: [{ name: "Trufas e bombons", slug: "trufas-e-bombons" }],
+  "Festas e buffet": [{ name: "Docinhos para festa", slug: "docinhos-para-festa" }],
+  "Datas especiais": [{ name: "Celebrações", slug: "celebracoes" }],
+} as const;
+
 export type RecipeCategory = (typeof RECIPE_CATEGORIES)[number];
 
 export type RecipeIngredient = {
@@ -31,6 +41,8 @@ export type RecipeSummary = {
   title: string;
   excerpt: string;
   category: RecipeCategory;
+  subcategory?: string | null;
+  subcategorySlug?: string | null;
   tags?: string[];
   coverImageUrl: string;
   coverImageAlt: string;
@@ -69,12 +81,14 @@ export async function fetchFeaturedRecipes(signal?: AbortSignal): Promise<Recipe
 }
 
 export async function fetchRecipes(
-  params: { limit?: number; cursor?: string; category?: RecipeCategory; q?: string },
+  params: { limit?: number; cursor?: string; category?: RecipeCategory; subcategory?: string; subcategorySlug?: string; q?: string },
   signal?: AbortSignal,
 ): Promise<RecipeListResponse> {
   const query = new URLSearchParams({ limit: String(params.limit ?? 9) });
   if (params.cursor) query.set("cursor", params.cursor);
   if (params.category) query.set("category", params.category);
+  if (params.subcategory) query.set("subcategory", params.subcategory);
+  if (params.subcategorySlug) query.set("subcategorySlug", params.subcategorySlug);
   if (params.q?.trim()) query.set("q", params.q.trim());
   const response = await fetch(`/api/recipes?${query.toString()}`, { signal, headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error("Não foi possível carregar as receitas.");

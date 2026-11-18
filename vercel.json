@@ -3,16 +3,16 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/index.ts": {
+    "api/index.js": {
       "maxDuration": 120,
       "memory": 1024
     },
-    "api/recipe-page.ts": {
+    "api/recipe-page.js": {
       "maxDuration": 30,
       "memory": 1024,
       "includeFiles": "dist/recipe-shell.html"
     },
-    "api/recipes-sitemap.ts": {
+    "api/recipes-sitemap.js": {
       "maxDuration": 30,
       "memory": 1024
     }

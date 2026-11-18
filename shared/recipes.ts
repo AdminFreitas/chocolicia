@@ -10,6 +10,35 @@ export const RECIPE_CATEGORIES = [
   "Datas especiais",
 ] as const;
 
+export const RECIPE_TAXONOMY = {
+  Bolos: [
+    { name: "Bolos de chocolate", slug: "bolos-de-chocolate" },
+    { name: "Bolos de aniversário", slug: "bolos-de-aniversario" },
+    { name: "Bolos caseiros", slug: "bolos-caseiros" },
+    { name: "Bolos recheados", slug: "bolos-recheados" },
+    { name: "Bolos especiais", slug: "bolos-especiais" },
+  ],
+  "Brigadeiros e docinhos": [
+    { name: "Brigadeiros", slug: "brigadeiros" },
+    { name: "Docinhos", slug: "docinhos" },
+  ],
+  Tortas: [
+    { name: "Tortas doces", slug: "tortas-doces" },
+  ],
+  Sobremesas: [
+    { name: "Mousses", slug: "mousses" },
+  ],
+  Chocolates: [
+    { name: "Trufas e bombons", slug: "trufas-e-bombons" },
+  ],
+  "Festas e buffet": [
+    { name: "Docinhos para festa", slug: "docinhos-para-festa" },
+  ],
+  "Datas especiais": [
+    { name: "Celebrações", slug: "celebracoes" },
+  ],
+} as const;
+
 export const recipeCategorySchema = z.enum(RECIPE_CATEGORIES);
 export type RecipeCategory = z.infer<typeof recipeCategorySchema>;
 
@@ -40,6 +69,8 @@ export const recipeInputSchema = z.object({
   title: z.string().trim().min(5).max(180),
   excerpt: z.string().trim().min(20).max(160),
   category: recipeCategorySchema,
+  subcategory: z.string().trim().min(2).max(120).optional(),
+  subcategorySlug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
   coverImageUrl: z.string().url().max(2048),
   coverImageAlt: z.string().trim().min(8).max(240),
@@ -96,5 +127,7 @@ export const recipeListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(9),
   cursor: z.string().max(200).optional(),
   category: recipeCategorySchema.optional(),
+  subcategory: z.string().trim().min(2).max(120).optional(),
+  subcategorySlug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   q: z.string().trim().max(100).optional(),
 });

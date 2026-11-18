@@ -3,7 +3,7 @@ import { BookOpen, Search } from "lucide-react";
 import RecipeCard from "@/components/RecipeCard";
 import { WA_ORCAMENTO } from "@/config/site";
 import RecipeSiteChrome from "@/components/RecipeSiteChrome";
-import { RECIPE_CATEGORIES, fetchFeaturedRecipes, fetchRecipes, type RecipeCategory, type RecipeSummary } from "@/lib/recipes";
+import { RECIPE_CATEGORIES, RECIPE_TAXONOMY, fetchFeaturedRecipes, fetchRecipes, type RecipeCategory, type RecipeSummary } from "@/lib/recipes";
 import RecipePageMeta from "@/components/RecipePageMeta";
 import { Input } from "@/components/ui/input";
 
@@ -20,6 +20,8 @@ export default function Recipes() {
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [featuredError, setFeaturedError] = useState(false);
   const [category, setCategory] = useState<RecipeCategory | "">("");
+  const [subcategory, setSubcategory] = useState("");
+  const [subcategorySlug, setSubcategorySlug] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<RecipeSummary[]>([]);
@@ -30,6 +32,16 @@ export default function Recipes() {
   const [moreError, setMoreError] = useState(false);
   const [listRetry, setListRetry] = useState(0);
   const loadMoreController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const categoryParam = params.get("category");
+    const subcategoryParam = params.get("subcategory");
+    const subcategorySlugParam = params.get("subcategorySlug");
+    if (RECIPE_CATEGORIES.includes(categoryParam as RecipeCategory)) setCategory(categoryParam as RecipeCategory);
+    if (subcategoryParam) setSubcategory(subcategoryParam);
+    if (subcategorySlugParam) setSubcategorySlug(subcategorySlugParam);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,12 +66,12 @@ export default function Recipes() {
     setItems([]);
     setNextCursor(null);
     setMoreError(false);
-    fetchRecipes({ limit: 9, category: category || undefined, q: query || undefined }, controller.signal)
+    fetchRecipes({ limit: 9, category: category || undefined, subcategory: subcategory || undefined, subcategorySlug: subcategorySlug || undefined, q: query || undefined }, controller.signal)
       .then((page) => { setItems(page.items); setNextCursor(page.nextCursor); })
       .catch((reason: unknown) => { if (!isAbortError(reason)) setError(true); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [category, listRetry, query]);
+  }, [category, subcategory, subcategorySlug, listRetry, query]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loadingMore) return;
@@ -69,7 +81,7 @@ export default function Recipes() {
     setLoadingMore(true);
     setMoreError(false);
     try {
-      const page = await fetchRecipes({ limit: 9, cursor: nextCursor, category: category || undefined, q: query || undefined }, controller.signal);
+      const page = await fetchRecipes({ limit: 9, cursor: nextCursor, category: category || undefined, subcategory: subcategory || undefined, subcategorySlug: subcategorySlug || undefined, q: query || undefined }, controller.signal);
       setItems((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
     } catch (reason) {
@@ -77,11 +89,37 @@ export default function Recipes() {
     } finally {
       if (!controller.signal.aborted) setLoadingMore(false);
     }
-  }, [category, loadingMore, nextCursor, query]);
+  }, [category, subcategory, subcategorySlug, loadingMore, nextCursor, query]);
 
   useEffect(() => () => loadMoreController.current?.abort(), []);
 
-  const showFeatured = !category && !query;
+  const showFeatured = !category && !subcategory && !query;
+
+  const updateUrl = (nextCategory: RecipeCategory | "", nextSubcategory = "", nextSubcategorySlug = "") => {
+    const url = new URL(window.location.href);
+    if (nextCategory) url.searchParams.set("category", nextCategory);
+    else url.searchParams.delete("category");
+    if (nextSubcategorySlug) url.searchParams.set("subcategorySlug", nextSubcategorySlug);
+    else url.searchParams.delete("subcategorySlug");
+    if (nextSubcategory) url.searchParams.set("subcategory", nextSubcategory);
+    else url.searchParams.delete("subcategory");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const selectCategory = (nextCategory: RecipeCategory) => {
+    setCategory(nextCategory);
+    setSubcategory("");
+    setSubcategorySlug("");
+    updateUrl(nextCategory);
+  };
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setCategory("");
+    setSubcategory("");
+    setSubcategorySlug("");
+    updateUrl("");
+  };
 
   return (
     <RecipeSiteChrome>
@@ -116,16 +154,27 @@ export default function Recipes() {
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A5A44]" aria-hidden="true" />
                 <Input type="search" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Buscar receita ou ingrediente" className="min-h-12 w-full rounded-full border border-[#5A3428]/20 bg-white/80 py-3 pl-12 pr-4 text-sm text-[#5A3428] placeholder:text-[#8A5A44]/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D9A83E]" />
               </label>
-              <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible" aria-label="Filtrar receitas por categoria">
-                <button type="button" aria-pressed={!category} onClick={() => setCategory("")} className={`recipe-filter ${!category ? "is-active" : ""}`}>Todas</button>
-                {RECIPE_CATEGORIES.map((item) => <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`recipe-filter ${category === item ? "is-active" : ""}`}>{item}</button>)}
+              <div className="space-y-3" aria-label="Navegação de categorias e subcategorias">
+                <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
+                  <button type="button" aria-pressed={!category} onClick={clearFilters} className={`recipe-filter ${!category ? "is-active" : ""}`}>Todas</button>
+                  {RECIPE_CATEGORIES.map((item) => <button key={item} type="button" aria-pressed={category === item} onClick={() => selectCategory(item)} className={`recipe-filter ${category === item ? "is-active" : ""}`}>{item}</button>)}
+                </div>
+                {category && <div className="rounded-2xl border border-[#D9A83E]/25 bg-white/60 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[#5A3428]">Subcategorias de {category}</p>
+                    <button type="button" className="text-xs text-[#8A5A44] underline" onClick={clearFilters}>← Todas as categorias</button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
+                    {RECIPE_TAXONOMY[category].map((item) => <button key={item.slug} type="button" aria-pressed={subcategorySlug === item.slug} onClick={() => { setSubcategory(item.name); setSubcategorySlug(item.slug); updateUrl(category, item.name, item.slug); }} className={`recipe-filter ${subcategorySlug === item.slug ? "is-active" : ""}`}>{item.name}</button>)}
+                  </div>
+                </div>}
               </div>
             </div>
 
             <div aria-live="polite" aria-busy={loading}>
               {loading && <CardSkeleton />}
               {!loading && error && <div className="rounded-2xl border border-[#D9A83E]/35 bg-white/70 p-7 text-center" role="alert"><p className="font-display text-2xl">Não conseguimos carregar as receitas</p><p className="mt-2 text-sm text-[#8A5A44]">Verifique sua conexão e tente novamente.</p><button type="button" className="button-outline mt-5" onClick={() => { setError(false); setListRetry((current) => current + 1); }}>Tentar novamente</button></div>}
-              {!loading && !error && items.length === 0 && <div className="rounded-2xl border border-dashed border-[#D9A83E]/45 px-5 py-12 text-center"><p className="font-display text-2xl text-[#5A3428]">{query || category ? "Nenhuma receita encontrada" : "Em breve, novas receitas por aqui"}</p><p className="mt-2 text-sm text-[#8A5A44]">{query || category ? "Experimente outro termo ou escolha uma categoria diferente." : "Estamos preparando novidades gostosas para partilhar consigo."}</p>{(query || category) && <button type="button" className="text-cta mt-4" onClick={() => { setSearchInput(""); setCategory(""); }}>Limpar filtros</button>}</div>}
+              {!loading && !error && items.length === 0 && <div className="rounded-2xl border border-dashed border-[#D9A83E]/45 px-5 py-12 text-center"><p className="font-display text-2xl text-[#5A3428]">{query || category || subcategory ? "Nenhuma receita encontrada" : "Em breve, novas receitas por aqui"}</p><p className="mt-2 text-sm text-[#8A5A44]">{query || category || subcategory ? "Experimente outro termo ou escolha uma categoria diferente." : "Estamos preparando novidades gostosas para partilhar consigo."}</p>{(query || category || subcategory) && <button type="button" className="text-cta mt-4" onClick={clearFilters}>Limpar filtros</button>}</div>}
               {!loading && !error && items.length > 0 && <>
                 <p className="mb-4 text-xs text-[#8A5A44]">{items.length} {items.length === 1 ? "receita encontrada" : "receitas encontradas"}</p>
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} />)}</div>

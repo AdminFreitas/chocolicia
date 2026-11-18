@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { z } from "zod";
 import { RECIPE_CATEGORIES, ingredientSectionSchema, recipeFaqSchema, recipeStepSchema } from "../shared/recipes";
 import { getAllPublishedRecipeTitles, getPublishedRecipeTitlesSince, insertFailedRecipe, insertRecipe, toSlug } from "./recipeDb";
@@ -104,7 +103,13 @@ async function generateImage(prompt: string): Promise<Buffer> {
   return Buffer.from(encoded, "base64");
 }
 
+async function getSharp() {
+  const mod = await import("sharp");
+  return mod.default ?? mod;
+}
+
 async function storeVariants(title: string, image: Buffer) {
+  const sharp = await getSharp();
   const slug = toSlug(title) || `receita-${Date.now()}`;
   const sizes = [480, 800, 1280] as const;
   const variants: { w480?: string; w800?: string; w1280?: string; avif480?: string; avif800?: string; avif1280?: string } = {};

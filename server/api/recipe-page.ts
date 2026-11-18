@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getPublishedRecipeBySlug } from "../server/recipeDb";
-import { renderRecipePageHtml } from "../server/recipePage";
+import { getPublishedRecipeBySlug } from "../recipeDb";
+import { renderRecipePageHtml } from "../recipePage";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {

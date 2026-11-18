@@ -11,6 +11,8 @@ const recipeSummarySelection = {
   title: recipes.title,
   excerpt: recipes.excerpt,
   category: recipes.category,
+  subcategory: recipes.subcategory,
+  subcategorySlug: recipes.subcategorySlug,
   tags: recipes.tags,
   coverImageUrl: recipes.coverImageUrl,
   coverImageAlt: recipes.coverImageAlt,
@@ -50,10 +52,12 @@ function decodeRecipeCursor(cursor: string): { at: Date; id: string } {
   }
 }
 
-export async function listRecipes(options: { limit: number; cursor?: string; category?: string; q?: string }, dbOverride?: RecipeDb) {
+export async function listRecipes(options: { limit: number; cursor?: string; category?: string; subcategory?: string; subcategorySlug?: string; q?: string }, dbOverride?: RecipeDb) {
   const db = requireDb(dbOverride ?? await getDb());
   const conditions = [eq(recipes.status, "published"), isNotNull(recipes.publishedAt)];
   if (options.category) conditions.push(eq(recipes.category, options.category));
+  if (options.subcategory) conditions.push(eq(recipes.subcategory, options.subcategory));
+  if (options.subcategorySlug) conditions.push(eq(recipes.subcategorySlug, options.subcategorySlug));
   if (options.q) {
     const pattern = `%${options.q.replace(/[\\%_]/g, "\\$&")}%`;
     conditions.push(or(
@@ -126,6 +130,8 @@ export async function insertRecipe(input: RecipeInput & { slug: string }) {
     title: input.title,
     excerpt: input.excerpt,
     category: input.category,
+    subcategory: input.subcategory ?? null,
+    subcategorySlug: input.subcategorySlug ?? null,
     tags: input.tags,
     coverImageUrl: input.coverImageUrl,
     coverImageAlt: input.coverImageAlt,
