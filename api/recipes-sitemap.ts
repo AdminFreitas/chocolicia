@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { generateRecipesSitemap } from "../server/recipeSitemap";
+import { generateRecipesSitemap } from "../server/recipeSitemap.ts";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
