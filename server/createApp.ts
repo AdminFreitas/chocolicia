@@ -4,7 +4,8 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { registerAuthRoutes } from "./_core/authRoutes";
 import { createContext } from "./_core/context";
-import { createRecipesRouter } from "./recipesRoutes";
+import { createRecipesRouter, createUploadsRouter } from "./recipesRoutes";
+import { createArticlesRouter } from "./articlesRoutes";
 import { getPublishedRecipeBySlug } from "./recipeDb";
 import { renderRecipePageHtml } from "./recipePage";
 import { generateRecipesSitemap } from "./recipeSitemap";
@@ -52,6 +53,8 @@ export async function createApp(): Promise<Express> {
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
 
   app.use("/api/recipes", createRecipesRouter());
+  app.use("/api/articles", createArticlesRouter());
+  app.use("/api/uploads", createUploadsRouter());
   app.use(
     "/api/trpc",
     createExpressMiddleware({
