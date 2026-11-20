@@ -1,5 +1,6 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
+import sharp, { type Metadata } from "sharp";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
 import { getPublishedRecipeBySlug, getRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, publishRecipe, toSlug } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
@@ -7,6 +8,14 @@ import { storagePutPublic } from "./storage";
 import { createS3File } from "./db";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_BASE64_CHARS = Math.ceil(MAX_UPLOAD_BYTES / 3) * 4;
+const UPLOAD_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/avif": "avif",
+} as const;
 
 function cachePublic(res: Response) { res.setHeader("Cache-Control", PUBLIC_CACHE); }
 function readBearer(req: Request) {
@@ -62,7 +71,15 @@ export function createRecipesRouter() {
   router.get("/", async (req, res) => {
     const parsed = recipeListQuerySchema.safeParse(req.query);
     if (!parsed.success) { res.status(400).json({ error: "Parâmetros de pesquisa inválidos." }); return; }
-    try { const result = await listRecipes(parsed.data); cachePublic(res); res.json(result); } catch (error) { console.error("[Recipes] list:", error); res.status(503).json({ error: "Não foi possível carregar as receitas." }); }
+    try {
+      const result = await listRecipes(parsed.data);
+      cachePublic(res);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Cursor inválido") { res.status(400).json({ error: error.message }); return; }
+      console.error("[Recipes] list:", error);
+      res.status(503).json({ error: "Não foi possível carregar as receitas." });
+    }
   });
   const dailyHandler = async (req: Request, res: Response) => {
     const expected = process.env.CRON_SECRET;
@@ -90,6 +107,8 @@ export function createRecipesRouter() {
       responseFor(recipe, res);
     } catch (error) {
       if (error instanceof Error && (error.message.includes("coverImageUrl") || error.message.includes("category") || error.message.includes("subcategoria"))) { res.status(422).json({ error: error.message, code: "validation_failed" }); return; }
+      const dbError = error as { code?: string };
+      if (dbError.code === "23505") { res.status(409).json({ error: "Já existe uma receita com este slug.", code: "slug_conflict" }); return; }
       console.error("[Recipes] create:", error); res.status(400).json({ error: "Receita inválida." });
     }
   });
@@ -99,7 +118,19 @@ export function createRecipesRouter() {
     try { const existing = await getRecipeBySlug(req.params.slug); if (!existing) { res.status(404).json({ error: "Receita não encontrada." }); return; } if (existing.status === "published") { responseFor(existing, res, true); return; } const recipe = await publishRecipe(req.params.slug); responseFor(recipe, res); } catch (error) { console.error("[Recipes] publish:", error); res.status(503).json({ error: "Não foi possível publicar a receita." }); }
   });
   router.get("/:slug/status", async (req, res) => { try { const recipe = await getRecipeBySlug(req.params.slug); if (!recipe) { res.status(404).json({ error: "Receita não encontrada." }); return; } res.json({ id: recipe.id, slug: recipe.slug, status: recipe.status, publishedAt: recipe.publishedAt, url: `${process.env.PUBLIC_SITE_URL ?? "https://www.chocolicia.site"}/receitas/${recipe.slug}` }); } catch { res.status(503).json({ error: "Não foi possível consultar a receita." }); } });
-  router.get("/:slug", async (req, res) => { try { const recipe = await getPublishedRecipeBySlug(req.params.slug); if (!recipe) { res.status(404).json({ error: "Receita não encontrada." }); return; } cachePublic(res); res.json(recipe); } catch { res.status(503).json({ error: "Não foi possível carregar a receita." }); } });
+  router.get("/:slug", async (req, res) => {
+    const slug = String(req.params.slug);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) { res.status(404).json({ error: "Receita não encontrada." }); return; }
+    try {
+      const recipe = await getPublishedRecipeBySlug(slug);
+      if (!recipe) { res.status(404).json({ error: "Receita não encontrada." }); return; }
+      cachePublic(res);
+      res.json(recipe);
+    } catch (error) {
+      console.error("[Recipes] detail:", error);
+      res.status(503).json({ error: "Não foi possível carregar esta receita." });
+    }
+  });
 
   return router;
 }
@@ -109,12 +140,22 @@ export function createUploadsRouter() {
   router.post("/", async (req, res) => {
     if (!authorized(req, res)) return;
     try {
-      const { fileName, contentType, dataBase64, alt } = req.body ?? {};
-      if (typeof fileName !== "string" || typeof contentType !== "string" || !/^image\/(jpeg|png|webp|avif)$/.test(contentType) || typeof dataBase64 !== "string" || typeof alt !== "string") { res.status(400).json({ error: "Upload de imagem inválido." }); return; }
+      const { contentType, dataBase64, alt } = req.body ?? {};
+      const normalizedType = typeof contentType === "string" ? contentType.toLowerCase() : "";
+      if (typeof dataBase64 !== "string" || typeof alt !== "string" || !alt.length || alt.length > 240 || !normalizedType) { res.status(400).json({ error: "Upload de imagem inválido." }); return; }
+      if (!UPLOAD_TYPES[normalizedType as keyof typeof UPLOAD_TYPES]) { res.status(415).json({ error: "Tipo de imagem não suportado." }); return; }
+      if (dataBase64.length > MAX_UPLOAD_BASE64_CHARS) { res.status(413).json({ error: "A imagem deve ter no máximo 8 MB." }); return; }
+      if (dataBase64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(dataBase64)) { res.status(400).json({ error: "Base64 de imagem inválido." }); return; }
       const data = Buffer.from(dataBase64, "base64");
-      if (!data.length || data.length > 8 * 1024 * 1024) { res.status(413).json({ error: "A imagem deve ter entre 1 byte e 8 MB." }); return; }
-      const stored = await storagePutPublic(`agent/${fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`, data, contentType);
-      await createS3File({ objectKey: stored.key, fileUrl: stored.url, alt: alt.slice(0, 180), contentType, userId: "agent-chocolicia" });
+      if (!data.length || data.length > MAX_UPLOAD_BYTES) { res.status(413).json({ error: "A imagem deve ter entre 1 byte e 8 MB." }); return; }
+      let metadata: Metadata;
+      try { metadata = await sharp(data, { failOn: "error" }).metadata(); } catch { res.status(415).json({ error: "O conteúdo enviado não é uma imagem válida." }); return; }
+      const actualType = metadata.format === "jpeg" ? "image/jpeg" : metadata.format ? `image/${metadata.format}` : "";
+      if (actualType !== normalizedType) { res.status(415).json({ error: "O tipo declarado não corresponde ao conteúdo da imagem." }); return; }
+      const extension = UPLOAD_TYPES[normalizedType as keyof typeof UPLOAD_TYPES];
+      const generatedName = `agent/${randomUUID()}.${extension}`;
+      const stored = await storagePutPublic(generatedName, data, normalizedType);
+      await createS3File({ objectKey: stored.key, fileUrl: stored.url, alt: alt.slice(0, 240), contentType: normalizedType, userId: "agent-chocolicia" });
       res.status(201).json({ key: stored.key, url: stored.url });
     } catch (error) { console.error("[Uploads] agent:", error); res.status(503).json({ error: "Não foi possível armazenar a imagem." }); }
   });

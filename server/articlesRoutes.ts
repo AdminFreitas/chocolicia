@@ -3,6 +3,10 @@ import express, { type Request, type Response } from "express";
 import { getArticleBySlug, insertArticle, publishArticle } from "./articleDb";
 import { toSlug } from "./recipeDb";
 
+const MAX_ARTICLE_BYTES = 1_000_000;
+const ARTICLE_TYPES = new Set(["technique", "tip", "feature"]);
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 function token(req: Request, res: Response) {
   const expected = process.env.RECIPES_AGENT_TOKEN;
   const received = (req.header("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
@@ -18,9 +22,19 @@ export function createArticlesRouter() {
   router.post("/", async (req, res) => {
     if (!token(req, res)) return;
     const body = req.body ?? {};
-    if (!body.coverImageUrl || !String(body.coverImageUrl).startsWith("https://")) { res.status(422).json({ error: "coverImageUrl HTTPS é obrigatória." }); return; }
+    if (Buffer.byteLength(JSON.stringify(body), "utf8") > MAX_ARTICLE_BYTES) { res.status(413).json({ error: "O conteúdo excede o limite permitido." }); return; }
+    if (!body.coverImageUrl || !String(body.coverImageUrl).startsWith("https://")) { res.status(400).json({ error: "coverImageUrl HTTPS é obrigatória." }); return; }
     const slug = body.slug ?? toSlug(String(body.title ?? ""));
-    if (!slug || !body.title || !body.excerpt || !body.bodyMd || !body.type) { res.status(400).json({ error: "Dica inválida." }); return; }
+    if (
+      !slug || !SLUG_RE.test(String(slug)) || String(slug).length > 180 ||
+      typeof body.title !== "string" || body.title.length < 5 || body.title.length > 180 ||
+      typeof body.excerpt !== "string" || body.excerpt.length < 20 || body.excerpt.length > 160 ||
+      typeof body.bodyMd !== "string" || !body.bodyMd.length || body.bodyMd.length > 100_000 ||
+      typeof body.type !== "string" || !ARTICLE_TYPES.has(body.type) ||
+      (body.tipTopic !== undefined && (typeof body.tipTopic !== "string" || body.tipTopic.length < 1 || body.tipTopic.length > 60)) ||
+      (body.subcategorySlug !== undefined && (typeof body.subcategorySlug !== "string" || !SLUG_RE.test(body.subcategorySlug) || body.subcategorySlug.length > 120)) ||
+      typeof body.coverImageAlt !== "string" || body.coverImageAlt.length < 8 || body.coverImageAlt.length > 240
+    ) { res.status(400).json({ error: "Dica inválida." }); return; }
     try {
       const existing = await getArticleBySlug(slug);
       if (existing) {
@@ -30,7 +44,11 @@ export function createArticlesRouter() {
       }
       const row = await insertArticle({ slug, type: String(body.type), title: String(body.title), excerpt: String(body.excerpt), bodyMd: String(body.bodyMd), tipTopic: body.tipTopic ?? null, subcategorySlug: body.subcategorySlug ?? null, coverImageUrl: String(body.coverImageUrl), coverImageAlt: String(body.coverImageAlt ?? "Imagem do conteúdo"), payload: body, status: body.status === "published" ? "published" : "draft", generationMeta: body.generationMeta ?? {} });
       res.status(201).json({ ...row, url: url(row.slug) });
-    } catch (error) { console.error("[Articles] create:", error); res.status(400).json({ error: "Dica inválida." }); }
+    } catch (error) {
+      const dbError = error as { code?: string };
+      if (dbError.code === "23505") { res.status(409).json({ error: "Já existe conteúdo com este slug.", code: "slug_conflict" }); return; }
+      console.error("[Articles] create:", error); res.status(400).json({ error: "Dica inválida." });
+    }
   });
   router.post("/:slug/publish", async (req, res) => {
     if (!token(req, res)) return;
