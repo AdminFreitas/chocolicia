@@ -97,6 +97,14 @@ export async function getRecipeBySlug(slug: string, dbOverride?: RecipeDb) {
   return result[0] ?? null;
 }
 
+export async function publishRecipe(slug: string, dbOverride?: RecipeDb) {
+  const db = requireDb(dbOverride ?? await getDb());
+  const [row] = await db.update(recipes)
+    .set({ status: "published", publishedAt: new Date(), updatedAt: new Date() })
+    .where(eq(recipes.slug, slug)).returning();
+  return row ?? null;
+}
+
 export async function getPublishedRecipeSlugs(dbOverride?: RecipeDb) {
   const db = requireDb(dbOverride ?? await getDb());
   return db.select({ slug: recipes.slug, updatedAt: recipes.updatedAt })

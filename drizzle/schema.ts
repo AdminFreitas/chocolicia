@@ -3,6 +3,7 @@ import type { RecipeInput } from "../shared/recipes";
 
 export const userRole = pgEnum("user_role", ["user", "admin"]);
 export const recipeStatus = pgEnum("recipe_status", ["draft", "published", "failed"]);
+export const articleStatus = pgEnum("article_status", ["draft", "published"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -73,6 +74,28 @@ export const recipes = pgTable("recipes", {
   index("recipes_subcategory_slug_idx").on(table.subcategorySlug),
 ]);
 
+export const articles = pgTable("articles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  type: varchar("type", { length: 24 }).notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  excerpt: varchar("excerpt", { length: 160 }).notNull(),
+  bodyMd: text("body_md").notNull(),
+  tipTopic: varchar("tip_topic", { length: 60 }),
+  subcategorySlug: varchar("subcategory_slug", { length: 120 }),
+  coverImageUrl: text("cover_image_url").notNull(),
+  coverImageAlt: varchar("cover_image_alt", { length: 240 }).notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  status: articleStatus("status").notNull().default("draft"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  generationMeta: jsonb("generation_meta").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("articles_slug_uidx").on(table.slug),
+  index("articles_status_published_at_idx").on(table.status, table.publishedAt.desc()),
+]);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type S3File = typeof s3Files.$inferSelect;
@@ -81,3 +104,5 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
 export type Recipe = typeof recipes.$inferSelect;
 export type InsertRecipe = typeof recipes.$inferInsert;
+export type Article = typeof articles.$inferSelect;
+export type InsertArticle = typeof articles.$inferInsert;
