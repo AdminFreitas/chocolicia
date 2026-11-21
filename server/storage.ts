@@ -1,5 +1,6 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { put } from "@vercel/blob";
 
 const bucket = process.env.S3_BUCKET_NAME ?? "assets";
 const endpoint = process.env.AWS_ENDPOINT_URL_S3;
@@ -42,9 +43,13 @@ export async function storagePutPublic(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;
-  if (!publicBaseUrl) throw new Error("RECIPES_PUBLIC_BASE_URL is required for public recipe images");
   const key = appendHashSuffix(normalizeKey(relKey));
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(key, data, { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN, addRandomSuffix: false, contentType, cacheControlMaxAge: 31536000 });
+    return { key: blob.pathname, url: blob.url };
+  }
+  const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;
+  if (!publicBaseUrl) throw new Error("BLOB_READ_WRITE_TOKEN is required for public recipe images");
   const client = getS3Client();
   await client.send(new PutObjectCommand({
     Bucket: bucket,
