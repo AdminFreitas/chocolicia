@@ -250,19 +250,7 @@ async function listS3Files() {
 }
 
 // server/storage.ts
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-var bucket = process.env.S3_BUCKET_NAME ?? "assets";
-var endpoint = process.env.AWS_ENDPOINT_URL_S3;
-var region = process.env.AWS_REGION ?? "us-east-2";
-function getS3Client() {
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  if (!endpoint || !accessKeyId || !secretAccessKey) {
-    throw new Error("Neon Object Storage is not configured");
-  }
-  return new S3Client({ endpoint, region, forcePathStyle: true, credentials: { accessKeyId, secretAccessKey } });
-}
+import { head, put } from "@vercel/blob";
 function normalizeKey(relKey) {
   return relKey.replace(/^\/+/, "");
 }
@@ -271,31 +259,29 @@ function appendHashSuffix(relKey) {
   const lastDot = relKey.lastIndexOf(".");
   return lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
+function blobToken() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN n\xE3o est\xE1 configurado");
+  return token;
+}
 async function storagePut(relKey, data, contentType = "application/octet-stream") {
-  const key = appendHashSuffix(normalizeKey(relKey));
-  const client = getS3Client();
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: data, ContentType: contentType }));
-  const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 3600 });
-  return { key, url };
+  const pathname = appendHashSuffix(normalizeKey(relKey));
+  const body = data instanceof Uint8Array && !Buffer.isBuffer(data) ? Buffer.from(data) : data;
+  const blob = await put(pathname, body, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+    token: blobToken()
+  });
+  return { key: blob.pathname, url: blob.url };
 }
 async function storagePutPublic(relKey, data, contentType = "application/octet-stream") {
-  const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;
-  if (!publicBaseUrl) throw new Error("RECIPES_PUBLIC_BASE_URL is required for public recipe images");
-  const key = appendHashSuffix(normalizeKey(relKey));
-  const client = getS3Client();
-  await client.send(new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: data,
-    ContentType: contentType,
-    CacheControl: "public, max-age=31536000, immutable"
-  }));
-  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
-  return { key, url: `${publicBaseUrl.replace(/\/$/, "")}/${encodedKey}` };
+  return storagePut(relKey, data, contentType);
 }
 async function storageGetSignedUrl(relKey, expiresIn = 3600) {
-  const client = getS3Client();
-  return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: normalizeKey(relKey) }), { expiresIn });
+  void expiresIn;
+  const blob = await head(normalizeKey(relKey), { token: blobToken() });
+  return blob.url;
 }
 
 // server/routers.ts
@@ -757,10 +743,33 @@ var allergenMap = [
   [/\b(?:amendoim|paçoca)\b/i, "amendoim"]
 ];
 var blockedHealthClaims = /cura\w*|trat\w+ (?:a|o|do|da)|emagrec\w+|anti-?inflamatório|detox|controla (?:a|o) (?:glicemia|diabetes|pressão)/i;
-var textModel = process.env.RECIPES_TEXT_MODEL ?? "gpt-4.1-mini";
-var imageModel = process.env.RECIPES_IMAGE_MODEL ?? "gpt-image-1";
-function apiBase() {
-  return (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+var defaultTextModels = {
+  gemini: "gemini-2.5-flash",
+  groq: "llama-3.3-70b-versatile"
+};
+function env(name) {
+  return process.env[name]?.trim() || "";
+}
+function normalizedBaseUrl(value, fallback) {
+  return (value || fallback).replace(/\/$/, "");
+}
+function textCandidates() {
+  const configured = /* @__PURE__ */ new Map();
+  const ollamaModel = env("RECIPES_TEXT_MODEL") || env("OLLAMA_MODEL");
+  const geminiKey = env("GEMINI_API_KEY");
+  const groqKey = env("GROQ_API_KEY");
+  const openrouterKey = env("OPENROUTER_API_KEY");
+  const commonModel = env("RECIPES_TEXT_MODEL");
+  const geminiModel = env("GEMINI_MODEL") || commonModel || defaultTextModels.gemini;
+  const groqModel = env("GROQ_MODEL") || commonModel || defaultTextModels.groq;
+  const openrouterModel = env("OPENROUTER_MODEL") || commonModel;
+  if (ollamaModel) configured.set("ollama", { provider: "ollama", model: ollamaModel, baseUrl: normalizedBaseUrl(env("OLLAMA_BASE_URL") || env("OLLAMA_URL"), "http://127.0.0.1:11434/v1") });
+  if (geminiKey && geminiModel) configured.set("gemini", { provider: "gemini", model: geminiModel, apiKey: geminiKey });
+  if (groqKey && groqModel) configured.set("groq", { provider: "groq", model: groqModel, apiKey: groqKey, baseUrl: normalizedBaseUrl(env("GROQ_BASE_URL"), "https://api.groq.com/openai/v1") });
+  if (openrouterKey && openrouterModel) configured.set("openrouter", { provider: "openrouter", model: openrouterModel, apiKey: openrouterKey, baseUrl: normalizedBaseUrl(env("OPENROUTER_BASE_URL"), "https://openrouter.ai/api/v1") });
+  const preferred = env("RECIPES_TEXT_PROVIDER").toLowerCase();
+  const order = preferred && preferred !== "auto" ? [preferred, "ollama", "gemini", "groq", "openrouter"] : ["ollama", "gemini", "groq", "openrouter"];
+  return Array.from(new Set(order)).map((provider) => configured.get(provider)).filter((item) => Boolean(item));
 }
 async function withRetry(name, action, attempts = 3) {
   let lastError;
@@ -780,28 +789,50 @@ function chooseCategory(existing) {
   return [...RECIPE_CATEGORIES].sort((left, right) => (weekCounts.get(left) ?? 0) - (weekCounts.get(right) ?? 0))[0];
 }
 async function generateRecipeJson(existingTitles, category) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY n\xE3o est\xE1 configurada");
+  const candidates = textCandidates();
+  if (!candidates.length) throw new Error("Nenhum provedor de texto configurado; defina RECIPES_TEXT_PROVIDER/RECIPES_TEXT_MODEL e uma credencial suportada");
   const prompt = `Crie uma receita original da Chocol\xEDcia. A voz \xE9 calorosa, artesanal e acolhedora, em portugu\xEAs do Brasil. As medidas devem ser em gramas, x\xEDcaras e colheres. A receita precisa ser realista e test\xE1vel numa cozinha dom\xE9stica, com dicas de ponto, conserva\xE7\xE3o e substitui\xE7\xF5es. Categoria desejada: ${category}. N\xE3o repita nem fa\xE7a varia\xE7\xF5es dos t\xEDtulos existentes: ${existingTitles.map((item) => item.title).join("; ") || "nenhum"}. N\xE3o copie textos de sites. N\xE3o fa\xE7a alega\xE7\xF5es ou recomenda\xE7\xF5es m\xE9dicas/de sa\xFAde. Devolva somente um objeto JSON v\xE1lido, sem Markdown, com: title, excerpt (at\xE9 160 caracteres), category (uma destas exatamente: ${RECIPE_CATEGORIES.join(" | ")}), tags, coverImageAlt, ingredients (array de grupos {name,items:[{quantity,unit,name,note?}]}), steps (array {title?,instruction}), tips (array), storageNotes, faq (array {question,answer}), prepTimeMin, cookTimeMin, servings e difficulty (F\xE1cil, M\xE9dia ou Dif\xEDcil). Inclua tempos plaus\xEDveis, no m\xEDnimo dois passos detalhados e quantidades completas.`;
-  const response = await fetch(`${apiBase()}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: textModel,
-      temperature: 0.8,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "Voc\xEA \xE9 a redatora culin\xE1ria da Chocol\xEDcia. Gere conte\xFAdo original e seguro. Responda sempre apenas JSON v\xE1lido e nunca ofere\xE7a alega\xE7\xF5es m\xE9dicas." },
-        { role: "user", content: prompt }
-      ]
-    }),
-    signal: AbortSignal.timeout(35e3)
-  });
-  if (!response.ok) throw new Error(`Modelo de texto respondeu HTTP ${response.status}`);
-  const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new Error("A resposta do modelo de texto veio vazia");
-  const parsed = generatedContentSchema.parse(JSON.parse(content));
+  const errors = [];
+  for (const candidate of candidates) {
+    try {
+      let content = "";
+      if (candidate.provider === "gemini") {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate.model)}:generateContent?key=${encodeURIComponent(candidate.apiKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: `${prompt}
+
+Responda apenas JSON v\xE1lido.` }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.8 } }),
+          signal: AbortSignal.timeout(35e3)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        content = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+      } else {
+        const baseUrl = candidate.baseUrl;
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: { ...candidate.apiKey ? { Authorization: `Bearer ${candidate.apiKey}` } : {}, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: candidate.model, temperature: 0.8, response_format: { type: "json_object" }, messages: [
+            { role: "system", content: "Voc\xEA \xE9 a redatora culin\xE1ria da Chocol\xEDcia. Gere conte\xFAdo original e seguro. Responda sempre apenas JSON v\xE1lido e nunca ofere\xE7a alega\xE7\xF5es m\xE9dicas." },
+            { role: "user", content: prompt }
+          ] }),
+          signal: AbortSignal.timeout(35e3)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        content = payload.choices?.[0]?.message?.content || "";
+      }
+      if (!content) throw new Error("resposta vazia");
+      const parsed = generatedContentSchema.parse(JSON.parse(content));
+      return finalizeGeneratedContent(parsed);
+    } catch (error) {
+      errors.push(`${candidate.provider}: ${error instanceof Error ? error.message : "falha"}`);
+    }
+  }
+  throw new Error(`Todos os provedores de texto falharam: ${errors.join("; ")}`);
+}
+function finalizeGeneratedContent(parsed) {
   const allText = JSON.stringify(parsed);
   if (blockedHealthClaims.test(allText)) throw new Error("Conte\xFAdo com alega\xE7\xE3o m\xE9dica/de sa\xFAde bloqueado");
   const detected = allergenMap.filter(([pattern]) => pattern.test(allText)).map(([, label]) => label);
@@ -812,12 +843,15 @@ async function generateRecipeJson(existingTitles, category) {
   return parsed;
 }
 async function generateImage(prompt) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY n\xE3o est\xE1 configurada");
-  const response = await fetch(`${apiBase()}/images/generations`, {
+  const apiKey = env("RECIPES_IMAGE_API_KEY") || env("OPENAI_API_KEY");
+  const provider = env("RECIPES_IMAGE_PROVIDER") || "openai-compatible";
+  if (provider !== "openai-compatible" && provider !== "openai") throw new Error(`Provedor de imagem n\xE3o suportado: ${provider}`);
+  if (!apiKey) throw new Error("RECIPES_IMAGE_API_KEY (ou OPENAI_API_KEY) \xE9 necess\xE1ria para gera\xE7\xE3o de imagens");
+  const baseUrl = normalizedBaseUrl(env("RECIPES_IMAGE_API_BASE_URL") || env("OPENAI_BASE_URL"), "https://api.openai.com/v1");
+  const response = await fetch(`${baseUrl}/images/generations`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: imageModel, prompt, size: "1536x1024", quality: "medium", output_format: "png" }),
+    body: JSON.stringify({ model: env("RECIPES_IMAGE_MODEL") || "gpt-image-1", prompt, size: "1536x1024", quality: "medium", output_format: "png" }),
     signal: AbortSignal.timeout(45e3)
   });
   if (!response.ok) throw new Error(`Modelo de imagem respondeu HTTP ${response.status}`);
@@ -858,7 +892,7 @@ async function runDailyRecipeGeneration() {
   ]);
   const category = chooseCategory(recent);
   let draftTitle = `Receita Chocol\xEDcia ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}`;
-  let aiModel = textModel;
+  let aiModel = env("RECIPES_TEXT_MODEL") || env("OLLAMA_MODEL") || void 0;
   try {
     const content = await withRetry("gera\xE7\xE3o de texto", () => generateRecipeJson(allPublished, category));
     draftTitle = content.title;
@@ -881,7 +915,7 @@ async function runDailyRecipeGeneration() {
       status,
       publishedAt: status === "published" ? /* @__PURE__ */ new Date() : void 0,
       aiModel,
-      generationMeta: { generatedAt: (/* @__PURE__ */ new Date()).toISOString(), textModel, imageModel, categoryChosen: category, source: "daily-cron" }
+      generationMeta: { generatedAt: (/* @__PURE__ */ new Date()).toISOString(), textProvider: env("RECIPES_TEXT_PROVIDER") || "auto", textModel: aiModel, imageProvider: env("RECIPES_IMAGE_PROVIDER") || "openai-compatible", imageModel: env("RECIPES_IMAGE_MODEL") || "gpt-image-1", categoryChosen: category, source: "daily-cron" }
     });
     return { status: recipe.status, slug: recipe.slug, title: recipe.title, publishedAt: recipe.publishedAt };
   } catch (error) {
@@ -1156,7 +1190,7 @@ function renderRecipePageHtml(template, recipe) {
   const title = escapeHtml(`${recipe.title} | Receitas Chocol\xEDcia`);
   const image = escapeHtml(recipe.coverImageUrl);
   const jsonLd = JSON.stringify(recipeJsonLd(recipe)).replace(/</g, "\\u003c");
-  const head = `
+  const head2 = `
     <title>${title}</title>
     <meta name="description" content="${description}" />
     <link rel="canonical" href="${escapeHtml(canonical)}" />
@@ -1170,7 +1204,7 @@ function renderRecipePageHtml(template, recipe) {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${image}" />
     <script type="application/ld+json">${jsonLd}</script>`;
-  let html = template.replace(/<title>[\s\S]*?<\/title>/, "").replace(/<link rel="canonical"[^>]*\/?\s*>/g, "").replace(/<meta property="og:[^>]*\/?\s*>/g, "").replace(/<meta name="twitter:[^>]*\/?\s*>/g, "").replace(/<meta name="description"[^>]*\/?\s*>/g, "").replace("<head>", `<head>${head}`);
+  let html = template.replace(/<title>[\s\S]*?<\/title>/, "").replace(/<link rel="canonical"[^>]*\/?\s*>/g, "").replace(/<meta property="og:[^>]*\/?\s*>/g, "").replace(/<meta name="twitter:[^>]*\/?\s*>/g, "").replace(/<meta name="description"[^>]*\/?\s*>/g, "").replace("<head>", `<head>${head2}`);
   html = html.replace('<div id="root"></div>', `<div id="root" data-recipe-prerendered="true">${recipeBody(recipe)}</div>`);
   return html;
 }

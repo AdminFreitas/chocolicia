@@ -28,11 +28,49 @@ const allergenMap: Array<[RegExp, string]> = [
   [/\b(?:amendoim|paçoca)\b/i, "amendoim"],
 ];
 const blockedHealthClaims = /cura\w*|trat\w+ (?:a|o|do|da)|emagrec\w+|anti-?inflamatório|detox|controla (?:a|o) (?:glicemia|diabetes|pressão)/i;
-const textModel = process.env.RECIPES_TEXT_MODEL ?? "gpt-4.1-mini";
-const imageModel = process.env.RECIPES_IMAGE_MODEL ?? "gpt-image-1";
+type TextProvider = "ollama" | "gemini" | "groq" | "openrouter";
 
-function apiBase() {
-  return (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+type TextCandidate = {
+  provider: TextProvider;
+  model: string;
+  apiKey?: string;
+  baseUrl?: string;
+};
+
+const defaultTextModels: Partial<Record<TextProvider, string>> = {
+  gemini: "gemini-2.5-flash",
+  groq: "llama-3.3-70b-versatile",
+};
+
+function env(name: string) {
+  return process.env[name]?.trim() || "";
+}
+
+function normalizedBaseUrl(value: string, fallback: string) {
+  return (value || fallback).replace(/\/$/, "");
+}
+
+function textCandidates(): TextCandidate[] {
+  const configured = new Map<TextProvider, TextCandidate>();
+  const ollamaModel = env("RECIPES_TEXT_MODEL") || env("OLLAMA_MODEL");
+  const geminiKey = env("GEMINI_API_KEY");
+  const groqKey = env("GROQ_API_KEY");
+  const openrouterKey = env("OPENROUTER_API_KEY");
+  const commonModel = env("RECIPES_TEXT_MODEL");
+  const geminiModel = env("GEMINI_MODEL") || commonModel || defaultTextModels.gemini;
+  const groqModel = env("GROQ_MODEL") || commonModel || defaultTextModels.groq;
+  const openrouterModel = env("OPENROUTER_MODEL") || commonModel;
+
+  if (ollamaModel) configured.set("ollama", { provider: "ollama", model: ollamaModel, baseUrl: normalizedBaseUrl(env("OLLAMA_BASE_URL") || env("OLLAMA_URL"), "http://127.0.0.1:11434/v1") });
+  if (geminiKey && geminiModel) configured.set("gemini", { provider: "gemini", model: geminiModel, apiKey: geminiKey });
+  if (groqKey && groqModel) configured.set("groq", { provider: "groq", model: groqModel, apiKey: groqKey, baseUrl: normalizedBaseUrl(env("GROQ_BASE_URL"), "https://api.groq.com/openai/v1") });
+  if (openrouterKey && openrouterModel) configured.set("openrouter", { provider: "openrouter", model: openrouterModel, apiKey: openrouterKey, baseUrl: normalizedBaseUrl(env("OPENROUTER_BASE_URL"), "https://openrouter.ai/api/v1") });
+
+  const preferred = env("RECIPES_TEXT_PROVIDER").toLowerCase();
+  const order: TextProvider[] = preferred && preferred !== "auto"
+    ? [preferred as TextProvider, "ollama", "gemini", "groq", "openrouter"]
+    : ["ollama", "gemini", "groq", "openrouter"];
+  return Array.from(new Set(order)).map((provider) => configured.get(provider)).filter((item): item is TextCandidate => Boolean(item));
 }
 
 async function withRetry<T>(name: string, action: () => Promise<T>, attempts = 3): Promise<T> {
@@ -55,28 +93,46 @@ function chooseCategory(existing: Array<{ category: string }>) {
 }
 
 async function generateRecipeJson(existingTitles: Array<{ title: string; category: string; slug: string }>, category: string) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY não está configurada");
+  const candidates = textCandidates();
+  if (!candidates.length) throw new Error("Nenhum provedor de texto configurado; defina RECIPES_TEXT_PROVIDER/RECIPES_TEXT_MODEL e uma credencial suportada");
   const prompt = `Crie uma receita original da Chocolícia. A voz é calorosa, artesanal e acolhedora, em português do Brasil. As medidas devem ser em gramas, xícaras e colheres. A receita precisa ser realista e testável numa cozinha doméstica, com dicas de ponto, conservação e substituições. Categoria desejada: ${category}. Não repita nem faça variações dos títulos existentes: ${existingTitles.map((item) => item.title).join("; ") || "nenhum"}. Não copie textos de sites. Não faça alegações ou recomendações médicas/de saúde. Devolva somente um objeto JSON válido, sem Markdown, com: title, excerpt (até 160 caracteres), category (uma destas exatamente: ${RECIPE_CATEGORIES.join(" | ")}), tags, coverImageAlt, ingredients (array de grupos {name,items:[{quantity,unit,name,note?}]}), steps (array {title?,instruction}), tips (array), storageNotes, faq (array {question,answer}), prepTimeMin, cookTimeMin, servings e difficulty (Fácil, Média ou Difícil). Inclua tempos plausíveis, no mínimo dois passos detalhados e quantidades completas.`;
-  const response = await fetch(`${apiBase()}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: textModel,
-      temperature: 0.8,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "Você é a redatora culinária da Chocolícia. Gere conteúdo original e seguro. Responda sempre apenas JSON válido e nunca ofereça alegações médicas." },
-        { role: "user", content: prompt },
-      ],
-    }),
-    signal: AbortSignal.timeout(35_000),
-  });
-  if (!response.ok) throw new Error(`Modelo de texto respondeu HTTP ${response.status}`);
-  const payload = await response.json() as { choices?: Array<{ message?: { content?: string | null } }> };
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new Error("A resposta do modelo de texto veio vazia");
-  const parsed = generatedContentSchema.parse(JSON.parse(content));
+  const errors: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      let content = "";
+      if (candidate.provider === "gemini") {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate.model)}:generateContent?key=${encodeURIComponent(candidate.apiKey!)}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: `${prompt}\n\nResponda apenas JSON válido.` }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.8 } }),
+          signal: AbortSignal.timeout(35_000),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+        content = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+      } else {
+        const baseUrl = candidate.baseUrl!;
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST", headers: { ...(candidate.apiKey ? { Authorization: `Bearer ${candidate.apiKey}` } : {}), "Content-Type": "application/json" },
+          body: JSON.stringify({ model: candidate.model, temperature: 0.8, response_format: { type: "json_object" }, messages: [
+            { role: "system", content: "Você é a redatora culinária da Chocolícia. Gere conteúdo original e seguro. Responda sempre apenas JSON válido e nunca ofereça alegações médicas." },
+            { role: "user", content: prompt },
+          ] }), signal: AbortSignal.timeout(35_000),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json() as { choices?: Array<{ message?: { content?: string | null } }> };
+        content = payload.choices?.[0]?.message?.content || "";
+      }
+      if (!content) throw new Error("resposta vazia");
+      const parsed = generatedContentSchema.parse(JSON.parse(content));
+      return finalizeGeneratedContent(parsed);
+    } catch (error) {
+      errors.push(`${candidate.provider}: ${error instanceof Error ? error.message : "falha"}`);
+    }
+  }
+  throw new Error(`Todos os provedores de texto falharam: ${errors.join("; ")}`);
+}
+
+function finalizeGeneratedContent(parsed: z.infer<typeof generatedContentSchema>) {
   const allText = JSON.stringify(parsed);
   if (blockedHealthClaims.test(allText)) throw new Error("Conteúdo com alegação médica/de saúde bloqueado");
   const detected = allergenMap.filter(([pattern]) => pattern.test(allText)).map(([, label]) => label);
@@ -88,12 +144,15 @@ async function generateRecipeJson(existingTitles: Array<{ title: string; categor
 }
 
 async function generateImage(prompt: string): Promise<Buffer> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY não está configurada");
-  const response = await fetch(`${apiBase()}/images/generations`, {
+  const apiKey = env("RECIPES_IMAGE_API_KEY") || env("OPENAI_API_KEY");
+  const provider = env("RECIPES_IMAGE_PROVIDER") || "openai-compatible";
+  if (provider !== "openai-compatible" && provider !== "openai") throw new Error(`Provedor de imagem não suportado: ${provider}`);
+  if (!apiKey) throw new Error("RECIPES_IMAGE_API_KEY (ou OPENAI_API_KEY) é necessária para geração de imagens");
+  const baseUrl = normalizedBaseUrl(env("RECIPES_IMAGE_API_BASE_URL") || env("OPENAI_BASE_URL"), "https://api.openai.com/v1");
+  const response = await fetch(`${baseUrl}/images/generations`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: imageModel, prompt, size: "1536x1024", quality: "medium", output_format: "png" }),
+    body: JSON.stringify({ model: env("RECIPES_IMAGE_MODEL") || "gpt-image-1", prompt, size: "1536x1024", quality: "medium", output_format: "png" }),
     signal: AbortSignal.timeout(45_000),
   });
   if (!response.ok) throw new Error(`Modelo de imagem respondeu HTTP ${response.status}`);
@@ -137,7 +196,7 @@ export async function runDailyRecipeGeneration() {
   ]);
   const category = chooseCategory(recent);
   let draftTitle = `Receita Chocolícia ${new Date().toISOString().slice(0, 10)}`;
-  let aiModel: string | undefined = textModel;
+  let aiModel: string | undefined = env("RECIPES_TEXT_MODEL") || env("OLLAMA_MODEL") || undefined;
   try {
     const content = await withRetry("geração de texto", () => generateRecipeJson(allPublished, category));
     draftTitle = content.title;
@@ -160,7 +219,7 @@ export async function runDailyRecipeGeneration() {
       status,
       publishedAt: status === "published" ? new Date() : undefined,
       aiModel,
-      generationMeta: { generatedAt: new Date().toISOString(), textModel, imageModel, categoryChosen: category, source: "daily-cron" },
+      generationMeta: { generatedAt: new Date().toISOString(), textProvider: env("RECIPES_TEXT_PROVIDER") || "auto", textModel: aiModel, imageProvider: env("RECIPES_IMAGE_PROVIDER") || "openai-compatible", imageModel: env("RECIPES_IMAGE_MODEL") || "gpt-image-1", categoryChosen: category, source: "daily-cron" },
     });
     return { status: recipe.status, slug: recipe.slug, title: recipe.title, publishedAt: recipe.publishedAt };
   } catch (error) {

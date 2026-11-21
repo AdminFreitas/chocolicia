@@ -1,18 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-const bucket = process.env.S3_BUCKET_NAME ?? "assets";
-const endpoint = process.env.AWS_ENDPOINT_URL_S3;
-const region = process.env.AWS_REGION ?? "us-east-2";
-
-function getS3Client() {
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  if (!endpoint || !accessKeyId || !secretAccessKey) {
-    throw new Error("Neon Object Storage is not configured");
-  }
-  return new S3Client({ endpoint, region, forcePathStyle: true, credentials: { accessKeyId, secretAccessKey } });
-}
+import { head, put } from "@vercel/blob";
 
 function normalizeKey(relKey: string) {
   return relKey.replace(/^\/+/, "");
@@ -24,42 +10,40 @@ function appendHashSuffix(relKey: string) {
   return lastDot === -1 ? `${relKey}_${hash}` : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
+function blobToken() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN não está configurado");
+  return token;
+}
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const key = appendHashSuffix(normalizeKey(relKey));
-  const client = getS3Client();
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: data, ContentType: contentType }));
-  const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 3600 });
-  return { key, url };
+  const pathname = appendHashSuffix(normalizeKey(relKey));
+  const body = data instanceof Uint8Array && !Buffer.isBuffer(data) ? Buffer.from(data) : data;
+  const blob = await put(pathname, body, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+    token: blobToken(),
+  });
+  return { key: blob.pathname, url: blob.url };
 }
 
-/** Upload a public, durable object for recipe pages; the bucket/CDN must expose this key publicly. */
 export async function storagePutPublic(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;
-  if (!publicBaseUrl) throw new Error("RECIPES_PUBLIC_BASE_URL is required for public recipe images");
-  const key = appendHashSuffix(normalizeKey(relKey));
-  const client = getS3Client();
-  await client.send(new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: data,
-    ContentType: contentType,
-    CacheControl: "public, max-age=31536000, immutable",
-  }));
-  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
-  return { key, url: `${publicBaseUrl.replace(/\/$/, "")}/${encodedKey}` };
+  return storagePut(relKey, data, contentType);
 }
 
 export async function storageGetSignedUrl(relKey: string, expiresIn = 3600) {
-  const client = getS3Client();
-  return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: normalizeKey(relKey) }), { expiresIn });
+  void expiresIn;
+  const blob = await head(normalizeKey(relKey), { token: blobToken() });
+  return blob.url;
 }
 
 export async function storageGet(relKey: string) {
