@@ -27,7 +27,7 @@ async function readJson(response: Response): Promise<any> {
 
 async function generateWithGemini(messages: TextMessage[]): Promise<TextResult> {
   const key = requireKey("gemini", "GEMINI_API_KEY");
-  const model = process.env.GEMINI_TEXT_MODEL || process.env.RECIPES_TEXT_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_TEXT_MODEL || process.env.RECIPES_TEXT_MODEL || "gemini-3.8-flash";
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
