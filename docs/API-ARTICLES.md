@@ -6,17 +6,17 @@
 
 O endpoint é montado na aplicação Express existente. Envie `Content-Type: application/json` e `Authorization: Bearer <RECIPES_AGENT_TOKEN>`. O token configurado no servidor é comparado em tempo constante e nunca é incluído em logs ou respostas. Não use `CRON_SECRET` para esta integração.
 
-O corpo tem limite de 1 MB. `title`, `slug`, `content` e `articleType` são obrigatórios. O slug tem de estar normalizado e seguir `^[a-z0-9]+(?:-[a-z0-9]+)*$`. `articleType` aceita `dica`, `tecnica` ou `materia`. Para criação, `status` aceita `draft` ou `published` e omissão equivale a `draft`; artigos arquivados não são criados por este endpoint.
+O corpo tem limite de 1 MB. `title`, `slug`, `content` e `articleType` são obrigatórios. O slug deve estar normalizado e seguir `^[a-z0-9]+(?:-[a-z0-9]+)*$`. `articleType` aceita `dica`, `tecnica` ou `materia`. Para criação, `status` aceita `draft` ou `published`; se omitido, o valor padrão é `draft`. Artigos arquivados não são criados por este endpoint.
 
 Campos opcionais: `excerpt`, `categoryId` e `topicId` (UUIDs existentes), `coverImageUrl`, `coverImageAlt`, `seoTitle`, `seoDescription`, `author`, `aiModel`, `generationMeta` (objeto JSON), `tags` (lista de strings únicas) e `images` (lista de URLs HTTP/HTTPS, texto alternativo, legenda e posição). Os IDs de categoria e tópico são validados contra `categories` e `tip_topics`. Uma categoria de terceiro nível é rejeitada.
 
-`images` é gravado diretamente em `article_images` (`image_url`, `alt_text`, `caption`, `position`). A branch Neon consultada não contém uma tabela `images`; portanto, o endpoint não cria uma relação para uma tabela inexistente. A capa fica nos campos `cover_image_url` e `cover_image_alt` do artigo.
+`images` é gravado diretamente em `article_images` (`image_url`, `alt_text`, `caption`, `position`). A ramificação Neon consultada não contém uma tabela `images`; portanto, o endpoint não cria uma relação para uma tabela inexistente. A imagem de capa fica nos campos `cover_image_url` e `cover_image_alt` do artigo.
 
-O artigo, tags e imagens associadas são escritos numa única transação. O slug não é alterado automaticamente nem um artigo existente é sobrescrito. Em `published`, o servidor define `published_at` no momento da gravação; em `draft`, deixa-o `null`.
+O artigo, as tags e as imagens associadas são gravados em uma única transação. O slug não é alterado automaticamente e um artigo existente não é sobrescrito. Para `published`, o servidor define `published_at` no momento da gravação; para `draft`, deixa-o `null`.
 
 ## Exemplos de pedido
 
-Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o tipo indicado. Substitua os UUIDs por IDs existentes no Neon e o URL por uma imagem válida. Estes exemplos são documentação, não foram enviados ao banco.
+Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o tipo indicado. Substitua os UUIDs por IDs existentes no Neon e o URL por uma imagem válida. Estes exemplos são documentação e não foram enviados ao banco.
 
 ### Dica (`dica`)
 
@@ -25,7 +25,7 @@ Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o ti
   "title": "Como conservar ganache",
   "slug": "como-conservar-ganache",
   "excerpt": "Orientações para manter a textura da ganache.",
-  "content": "## Conservação\n\nUse um recipiente limpo e bem fechado.",
+  "content": "## Conservação\\n\\nUse um recipiente limpo e bem fechado.",
   "articleType": "dica",
   "status": "draft",
   "topicId": "00000000-0000-4000-8000-000000000001",
@@ -33,7 +33,7 @@ Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o ti
   "images": [
     {
       "imageUrl": "https://example.com/ganache.jpg",
-      "altText": "Ganache numa taça",
+      "altText": "Ganache em uma tigela",
       "caption": "Textura cremosa",
       "position": 0
     }
@@ -48,12 +48,12 @@ Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o ti
 {
   "title": "Técnica de temperagem",
   "slug": "tecnica-de-temperagem",
-  "content": "## Temperagem\n\nDescreva aqui os passos da técnica.",
+  "content": "## Temperagem\\n\\nDescreva aqui os passos da técnica.",
   "articleType": "tecnica",
   "status": "published",
   "categoryId": "00000000-0000-4000-8000-000000000002",
   "coverImageUrl": "https://example.com/temperagem.jpg",
-  "coverImageAlt": "Chocolate temperado numa bancada",
+  "coverImageAlt": "Chocolate temperado em uma bancada",
   "seoTitle": "Técnica de temperagem de chocolate",
   "seoDescription": "Guia sobre temperagem de chocolate.",
   "aiModel": "modelo-usado",
@@ -68,10 +68,10 @@ Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o ti
   "title": "Ingredientes de confeitaria",
   "slug": "ingredientes-de-confeitaria",
   "excerpt": "Um guia editorial sobre ingredientes.",
-  "content": "## Ingredientes\n\nConteúdo editorial em Markdown.",
+  "content": "## Ingredientes\\n\\nConteúdo editorial em Markdown.",
   "articleType": "materia",
   "status": "draft",
-  "author": "Equipa Chocolícia",
+  "author": "Equipe Chocolícia",
   "generationMeta": { "pipeline": "editorial", "version": 1 }
 }
 ```
@@ -93,13 +93,13 @@ Os exemplos usam o mesmo endpoint e payload-base; altere `articleType` para o ti
 
 ## Erros
 
-| HTTP | Situação                                                                     | Corpo resumido                                                           |
-| ---: | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-|  400 | JSON/campos inválidos, slug inválido ou URL de imagem não HTTP(S)            | `{"error":"Artigo inválido.","details":{...}}`                           |
-|  401 | Cabeçalho/token Bearer ausente                                               | `{"error":"É necessário enviar um token Bearer."}`                       |
-|  403 | Token fornecido inválido                                                     | `{"error":"Token inválido."}`                                            |
-|  409 | Slug já existente                                                            | `{"error":"Já existe um artigo com este slug.","code":"duplicate_slug"}` |
-|  413 | Corpo acima de 1 MB                                                          | `{"error":"O conteúdo excede o limite permitido."}`                      |
-|  422 | Categoria/tópico inexistente ou hierarquia de categoria acima de dois níveis | resposta com `code` específico                                           |
-|  500 | Erro interno de persistência                                                 | `{"error":"Não foi possível criar o artigo."}`                           |
-|  503 | `RECIPES_AGENT_TOKEN` não configurado no servidor                            | `{"error":"A autenticação do endpoint não está configurada."}`           |
+| HTTP | Situação | Corpo resumido |
+| ---: | --- | --- |
+| 400 | JSON/campos inválidos, slug inválido ou URL de imagem não HTTP(S) | `{"error":"Artigo inválido.","details":{...}}` |
+| 401 | Cabeçalho/token Bearer ausente | `{"error":"É necessário enviar um token Bearer."}` |
+| 403 | Token fornecido inválido | `{"error":"Token inválido."}` |
+| 409 | Slug já existente | `{"error":"Já existe um artigo com este slug.","code":"duplicate_slug"}` |
+| 413 | Corpo acima de 1 MB | `{"error":"O conteúdo excede o limite permitido."}` |
+| 422 | Categoria/tópico inexistente ou hierarquia de categoria acima de dois níveis | resposta com `code` específico |
+| 500 | Erro interno de persistência | `{"error":"Não foi possível criar o artigo."}` |
+| 503 | `RECIPES_AGENT_TOKEN` não configurado no servidor | `{"error":"A autenticação do endpoint não está configurada."}` |
