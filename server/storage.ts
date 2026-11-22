@@ -45,7 +45,8 @@ export async function storagePutPublic(
 ): Promise<{ key: string; url: string }> {
   const key = appendHashSuffix(normalizeKey(relKey));
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(key, data, { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN, addRandomSuffix: false, contentType, cacheControlMaxAge: 31536000 });
+    const body = typeof data === "string" || Buffer.isBuffer(data) ? data : Buffer.from(data);
+    const blob = await put(key, body, { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN, addRandomSuffix: false, contentType, cacheControlMaxAge: 31536000 });
     return { key: blob.pathname, url: blob.url };
   }
   const publicBaseUrl = process.env.RECIPES_PUBLIC_BASE_URL;

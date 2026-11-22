@@ -5,7 +5,7 @@ type ImageResult = { image: Buffer; provider: string; model: string };
 function providersFromEnv(name: string, fallback: string[]): string[] {
   const raw = process.env[name];
   const values = (raw ? raw.split(",") : fallback).map((value) => value.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(values)];
+  return Array.from(new Set(values));
 }
 
 function requireKey(provider: string, keyName: string): string {
@@ -50,7 +50,7 @@ async function generateWithOpenAICompatible(provider: string, messages: TextMess
       ? { keyName: "OPENROUTER_API_KEY", baseUrl: "https://openrouter.ai/api/v1", model: process.env.OPENROUTER_TEXT_MODEL || process.env.RECIPES_TEXT_MODEL || "openai/gpt-4o-mini" }
       : { keyName: "OPENAI_API_KEY", baseUrl: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1", model: process.env.RECIPES_TEXT_MODEL || "gpt-4.1-mini" };
   const key = requireKey(provider, config.keyName);
-  const response = await fetch(`${config.baseUrl.replace(/\\/$/, "")}/chat/completions`, {
+  const response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify({ model: config.model, messages, temperature: 0.8, response_format: { type: "json_object" } }),
@@ -92,7 +92,7 @@ async function generateWithGeminiImage(prompt: string): Promise<ImageResult> {
 async function generateWithOpenAIImage(prompt: string): Promise<ImageResult> {
   const key = requireKey("openai", "OPENAI_API_KEY");
   const model = process.env.RECIPES_IMAGE_MODEL || "gpt-image-1";
-  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\\/$/, "");
+  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
   const response = await fetch(`${baseUrl}/images/generations`, {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
