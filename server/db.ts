@@ -8,7 +8,7 @@ let _sql: ReturnType<typeof postgres> | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 
 function resolveDatabaseUrl(): string | undefined {
-  return ENV.neonDatabaseUrl || ENV.databaseUrl || undefined;
+  return ENV.databaseUrl || ENV.neonDatabaseUrl || undefined;
 }
 
 function buildPostgresOptions(connectionString: string): Options<Record<string, never>> {
