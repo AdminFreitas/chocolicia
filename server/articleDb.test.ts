@@ -276,4 +276,66 @@ describe("createArticle transaction", () => {
       expect(input({ articleType }).articleType).toBe(articleType);
     }
   });
+
+  it("persists each of the three article types", async () => {
+    for (const articleType of ["dica", "tecnica", "materia"] as const) {
+      const fake = fakeDb([[]]);
+      const result = await createArticle(input({ articleType }), fake.db);
+      expect(result.articleType).toBe(articleType);
+      expect(fake.inserts).toHaveLength(1);
+    }
+  });
+
+  it("resolves categorySlug and topicSlug to ids", async () => {
+    const fake = fakeDb([
+      [],
+      [{ id: categoryId }],
+      [{ id: categoryId, parentId: null }],
+      [{ id: topicId }],
+      [{ id: topicId }],
+    ]);
+    const result = await createArticle(
+      input({ categorySlug: "doces", topicSlug: "preparo" }),
+      fake.db
+    );
+    expect(result.categoryId).toBe(categoryId);
+    expect(result.topicId).toBe(topicId);
+  });
+
+  it("rejects unknown categorySlug and topicSlug", async () => {
+    await expect(
+      createArticle(input({ categorySlug: "nao-existe" }), fakeDb([[], []]).db)
+    ).rejects.toMatchObject({ code: "category_not_found" });
+    await expect(
+      createArticle(input({ topicSlug: "nao-existe" }), fakeDb([[], []]).db)
+    ).rejects.toMatchObject({ code: "topic_not_found" });
+  });
+});
+
+describe("articleInputSchema", () => {
+  it("rejects id and slug together and unknown fields", () => {
+    const base = {
+      title: "t",
+      slug: "t",
+      content: "c",
+      articleType: "dica",
+    };
+    expect(
+      articleInputSchema.safeParse({ ...base, topicId, topicSlug: "preparo" })
+        .success
+    ).toBe(false);
+    expect(
+      articleInputSchema.safeParse({ ...base, categoryId, categorySlug: "a" })
+        .success
+    ).toBe(false);
+    expect(articleInputSchema.safeParse({ ...base, extra: 1 }).success).toBe(
+      false
+    );
+    expect(
+      articleInputSchema.safeParse({ ...base, articleType: "receita" }).success
+    ).toBe(false);
+    expect(
+      articleInputSchema.safeParse({ ...base, status: "archived" }).success
+    ).toBe(false);
+  });
 });

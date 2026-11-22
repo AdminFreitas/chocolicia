@@ -28,10 +28,21 @@ function readBearer(req: Request) {
 }
 
 function isSlugUniqueViolation(error: unknown) {
-  const dbError = error as { code?: string; constraint?: string };
-  return (
-    dbError?.code === "23505" && dbError?.constraint === "articles_slug_key"
-  );
+  let current: unknown = error;
+  for (let depth = 0; current && depth < 5; depth += 1) {
+    const dbError = current as {
+      code?: string;
+      constraint?: string;
+      constraint_name?: string;
+      cause?: unknown;
+    };
+    const constraint = dbError.constraint_name ?? dbError.constraint;
+    if (dbError.code === "23505" && constraint === "articles_slug_key") {
+      return true;
+    }
+    current = dbError.cause;
+  }
+  return false;
 }
 
 export function createArticlesRouter(options: ArticlesRouterOptions = {}) {
@@ -89,12 +100,10 @@ export function createArticlesRouter(options: ArticlesRouterOptions = {}) {
         error instanceof ArticleSlugConflictError ||
         isSlugUniqueViolation(error)
       ) {
-        res
-          .status(409)
-          .json({
-            error: "Já existe um artigo com este slug.",
-            code: "duplicate_slug",
-          });
+        res.status(409).json({
+          error: "Já existe um artigo com este slug.",
+          code: "duplicate_slug",
+        });
         return;
       }
       if (error instanceof ArticleReferenceError) {

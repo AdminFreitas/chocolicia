@@ -161,4 +161,27 @@ describe("POST /api/articles", () => {
     expect(log).toHaveBeenCalledWith("[Articles] create failed.");
     expect(JSON.stringify(log.mock.calls)).not.toContain(TOKEN);
   });
+
+  it("maps postgres 23505 on articles_slug_key (wrapped cause, constraint_name) to 409", async () => {
+    createMock.mockRejectedValueOnce(
+      Object.assign(new Error("Failed query"), {
+        cause: Object.assign(new Error("dup"), {
+          code: "23505",
+          constraint_name: "articles_slug_key",
+        }),
+      })
+    );
+    const response = await post(validBody(), `Bearer ${TOKEN}`);
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("duplicate_slug");
+  });
+
+  it("does not map other unique violations to 409", async () => {
+    createMock.mockRejectedValueOnce(
+      Object.assign(new Error("x"), { code: "23505", constraint: "other_key" })
+    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await post(validBody(), `Bearer ${TOKEN}`);
+    expect(response.status).toBe(500);
+  });
 });

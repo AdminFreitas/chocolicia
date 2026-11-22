@@ -48,6 +48,20 @@ export async function createArticle(
     if (existing) throw new ArticleSlugConflictError();
 
     let categoryId = input.categoryId ?? null;
+    if (!categoryId && input.categorySlug) {
+      const [bySlug] = await tx
+        .select({ id: categories.id })
+        .from(categories)
+        .where(eq(categories.slug, input.categorySlug))
+        .limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "A categoria indicada não existe.",
+          "category_not_found"
+        );
+      }
+      categoryId = bySlug.id;
+    }
     if (categoryId) {
       const [category] = await tx
         .select({ id: categories.id, parentId: categories.parentId })
@@ -82,7 +96,21 @@ export async function createArticle(
       }
     }
 
-    const topicId = input.topicId ?? null;
+    let topicId = input.topicId ?? null;
+    if (!topicId && input.topicSlug) {
+      const [bySlug] = await tx
+        .select({ id: tipTopics.id })
+        .from(tipTopics)
+        .where(eq(tipTopics.slug, input.topicSlug))
+        .limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "O tópico indicado não existe.",
+          "topic_not_found"
+        );
+      }
+      topicId = bySlug.id;
+    }
     if (topicId) {
       const [topic] = await tx
         .select({ id: tipTopics.id })

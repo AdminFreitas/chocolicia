@@ -20,24 +20,28 @@ const articleImageInputSchema = z.object({
   position: z.number().int().min(0).max(10_000).optional(),
 });
 
+const slugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(180)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "O slug deve usar apenas minúsculas, números e hífen simples."
+  );
+
 export const articleInputSchema = z
   .object({
     title: z.string().trim().min(1).max(500),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .max(180)
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "O slug deve usar apenas minúsculas, números e hífen simples."
-      ),
+    slug: slugSchema,
     excerpt: z.string().trim().max(10_000).nullable().optional(),
     content: z.string().min(1).max(1_000_000),
     articleType: z.enum(["dica", "tecnica", "materia"]),
     status: z.enum(["draft", "published"]).default("draft"),
     categoryId: z.string().uuid().nullable().optional(),
     topicId: z.string().uuid().nullable().optional(),
+    categorySlug: slugSchema.nullable().optional(),
+    topicSlug: slugSchema.nullable().optional(),
     coverImageUrl: httpUrlSchema.nullable().optional(),
     coverImageAlt: z.string().trim().max(500).nullable().optional(),
     seoTitle: z.string().trim().max(1_000).nullable().optional(),
@@ -59,7 +63,23 @@ export const articleInputSchema = z
       }),
     images: z.array(articleImageInputSchema).max(100).default([]),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.categoryId && value.categorySlug) {
+      context.addIssue({
+        code: "custom",
+        path: ["categorySlug"],
+        message: "Envie categoryId ou categorySlug, não ambos.",
+      });
+    }
+    if (value.topicId && value.topicSlug) {
+      context.addIssue({
+        code: "custom",
+        path: ["topicSlug"],
+        message: "Envie topicId ou topicSlug, não ambos.",
+      });
+    }
+  });
 
 export type ArticleInput = z.infer<typeof articleInputSchema>;
 export type ArticleImageInput = z.infer<typeof articleImageInputSchema>;
