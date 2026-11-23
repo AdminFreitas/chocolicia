@@ -1,8 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
-import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
-import { getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
+import { RECIPE_TAXONOMY, recipeInputSchema, recipeInputSchemaV1, recipeListQuerySchema } from "../shared/recipes";
+import { getAgentRecipeByIdempotencyKey, getAgentRecipeByTopicSlug, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug, countAgentRecipesSince } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
+import { agentError, agentTokensConfigured, hashRequest, publishingAllowed, requestId, requireV1, resolveAgentScope } from "./agentAuth";
+import { processAgentCover } from "./agentImages";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
 
@@ -42,6 +44,185 @@ function slugify(title: string) {
 
 function publicRecipe<T>(row: T): T {
   return row;
+}
+
+const V1_RECIPE_CATEGORIES: Record<string, { category: string; subcategory: string }> = {
+  "bolos-simples": { category: "Bolos", subcategory: "Bolos simples" },
+  "brigadeiros-e-docinhos": { category: "Brigadeiros e docinhos", subcategory: "Brigadeiros e docinhos" },
+  "trufas-e-bombons": { category: "Chocolates", subcategory: "Trufas e bombons" },
+  "doces-de-colher": { category: "Sobremesas", subcategory: "Doces de colher" },
+};
+
+function saoPauloDayStart(): Date {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day), 3));
+}
+
+function configuredCap(name: string, fallback: number): number | null {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+async function createV1Recipe(req: Request, res: Response) {
+  requestId(req, res);
+  if (!requireV1(req, res)) return;
+  if (!agentTokensConfigured()) {
+    agentError(res, 503, "agent_auth_not_configured", "A autenticação do agente não está configurada.");
+    return;
+  }
+  const scope = resolveAgentScope(req);
+  if (!scope) {
+    agentError(res, 401, "unauthorized", "Não autorizado.");
+    return;
+  }
+  const idempotencyKey = req.header("idempotency-key")?.trim() ?? "";
+  if (!/^[a-f0-9]{64}$/i.test(idempotencyKey)) {
+    agentError(res, 400, "idempotency_key_required", "Idempotency-Key deve conter um SHA-256 hexadecimal.");
+    return;
+  }
+  const contentLength = Number(req.header("content-length") ?? 0);
+  if (Math.max(contentLength, Buffer.byteLength(JSON.stringify(req.body ?? {}), "utf8")) > 1_000_000) {
+    agentError(res, 413, "payload_too_large", "O conteúdo excede o limite permitido.");
+    return;
+  }
+  const parsed = recipeInputSchemaV1.safeParse(req.body);
+  if (!parsed.success) {
+    agentError(res, 400, "validation_failed", "Receita inválida.", parsed.error.issues.map((issue) => ({
+      field: issue.path.join("."),
+      issue: issue.message,
+    })));
+    return;
+  }
+  const clean = sanitizeDeep(parsed.data);
+  const requestHash = hashRequest(clean);
+  try {
+    const prior = await getAgentRecipeByIdempotencyKey(idempotencyKey);
+    if (prior) {
+      if (prior.agentRequestHash !== requestHash) {
+        agentError(res, 422, "idempotency_key_reuse", "A mesma chave foi usada com outro conteúdo.");
+        return;
+      }
+      res.setHeader("Idempotent-Replay", "true");
+      res.status(201).json({
+        id: prior.id,
+        slug: prior.slug,
+        status: prior.status,
+        url: `${req.protocol}://${req.get("host")}/receitas/${encodeURIComponent(prior.slug)}`,
+      });
+      return;
+    }
+
+    const topicSlug = String(clean.generationMeta.topic_slug ?? "");
+    const runId = String(clean.generationMeta.run_id ?? "");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topicSlug) || !runId) {
+      agentError(res, 400, "validation_failed", "generationMeta precisa conter run_id e topic_slug válidos.");
+      return;
+    }
+    const taxonomy = V1_RECIPE_CATEGORIES[clean.subcategorySlug];
+    if (!taxonomy) {
+      agentError(res, 422, "subcategory_not_enabled", "A subcategoria não está habilitada para recebimento.");
+      return;
+    }
+    if (!publishingAllowed(scope, clean.status, res)) return;
+    const dayStart = saoPauloDayStart();
+    const cap = clean.status === "published"
+      ? configuredCap("AGENT_DAILY_CAP_RECIPES", 1)
+      : configuredCap("AGENT_DAILY_CAP_DRAFTS", 3);
+    if (cap === null) {
+      agentError(res, 503, "invalid_configuration", "O limite diário de conteúdo está inválido.");
+      return;
+    }
+    const count = await countAgentRecipesSince(clean.status, dayStart);
+    if (count >= cap) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((dayStart.getTime() + 86_400_000 - Date.now()) / 1000))));
+      agentError(res, 429, "daily_cap_reached", "O limite diário de receitas foi atingido.");
+      return;
+    }
+    const existing = await getAgentRecipeByTopicSlug(topicSlug);
+    if (existing) {
+      agentError(res, 409, "topic_exists", "Já existe conteúdo para esta pauta.");
+      return;
+    }
+    const slug = clean.slug ?? toSlug(clean.title);
+    if (!slug) {
+      agentError(res, 400, "validation_failed", "Não foi possível gerar o slug da receita.");
+      return;
+    }
+    let image;
+    try {
+      image = await processAgentCover(clean.cover, slug);
+    } catch (error) {
+      console.error("[Recipes] v1 image processing failed:", typeName(error), res.getHeader("X-Request-Id"));
+      agentError(res, 422, "image_processing_failed", "A imagem não pôde ser validada e armazenada.");
+      return;
+    }
+    const generationMeta = {
+      ...clean.generationMeta,
+      contractV1: {
+        intro: clean.intro ?? null,
+        restTimeMin: clean.restTimeMin,
+        yieldLabel: clean.yieldLabel ?? null,
+        diet: clean.diet,
+        occasions: clean.occasions,
+        collections: clean.collections,
+        cover: image.source,
+      },
+    };
+    const recipe = await insertRecipe({
+      slug,
+      title: clean.title,
+      excerpt: clean.excerpt,
+      category: taxonomy.category as Parameters<typeof insertRecipe>[0]["category"],
+      subcategory: taxonomy.subcategory,
+      subcategorySlug: clean.subcategorySlug,
+      tags: clean.tags,
+      coverImageUrl: image.url,
+      coverImageAlt: clean.coverImageAlt,
+      imagePrompt: clean.cover.mode === "generate" ? clean.cover.imagePrompt : "",
+      coverImageVariants: image.variants,
+      ingredients: clean.ingredients.map((section) => ({
+        name: section.name,
+        items: section.items.map(({ ingredientSlug: _ingredientSlug, ...item }) => item),
+      })),
+      steps: clean.steps,
+      tips: clean.tips,
+      storageNotes: clean.storageNotes,
+      faq: clean.faq,
+      prepTimeMin: clean.prepTimeMin,
+      cookTimeMin: clean.cookTimeMin,
+      servings: clean.servings,
+      difficulty: clean.difficulty,
+      status: clean.status,
+      aiModel: clean.aiModel,
+      generationMeta,
+    }, { topicSlug, idempotencyKey, requestHash });
+    res.status(201).json({
+      id: recipe.id,
+      slug: recipe.slug,
+      status: recipe.status,
+      url: `${req.protocol}://${req.get("host")}/receitas/${encodeURIComponent(recipe.slug)}`,
+    });
+  } catch (error) {
+    const dbError = error as { code?: string };
+    if (dbError.code === "23505") {
+      agentError(res, 409, "topic_exists", "Já existe conteúdo com esta pauta ou chave idempotente.");
+      return;
+    }
+    console.error("[Recipes] v1 create failed:", typeName(error), res.getHeader("X-Request-Id"));
+    agentError(res, 503, "server_error", "Não foi possível guardar a receita.");
+  }
+}
+
+function typeName(error: unknown): string {
+  return error instanceof Error ? error.name : "UnknownError";
 }
 
 export function createRecipesRouter() {
@@ -101,6 +282,10 @@ export function createRecipesRouter() {
   router.post("/generate-daily", dailyHandler);
 
   router.post("/", async (req, res) => {
+    if (req.header("x-contract-version") !== undefined) {
+      await createV1Recipe(req, res);
+      return;
+    }
     const expected = process.env.RECIPES_AGENT_TOKEN;
     if (!expected) {
       res.status(503).json({ error: "A publicação por agente não está configurada." });

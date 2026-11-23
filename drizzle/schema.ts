@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, foreignKey, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import type { RecipeInput } from "../shared/recipes";
 
 export const userRole = pgEnum("user_role", ["user", "admin"]);
@@ -64,13 +64,123 @@ export const recipes = pgTable("recipes", {
   publishedAt: timestamp("published_at", { withTimezone: true }),
   aiModel: varchar("ai_model", { length: 120 }),
   generationMeta: jsonb("generation_meta").$type<Record<string, unknown>>().notNull().default({}),
+  agentTopicSlug: varchar("agent_topic_slug", { length: 180 }),
+  agentIdempotencyKey: varchar("agent_idempotency_key", { length: 128 }),
+  agentRequestHash: varchar("agent_request_hash", { length: 64 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("recipes_slug_uidx").on(table.slug),
+  uniqueIndex("recipes_agent_topic_slug_uidx").on(table.agentTopicSlug),
+  uniqueIndex("recipes_agent_idempotency_key_uidx").on(table.agentIdempotencyKey),
   index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()),
   index("recipes_category_idx").on(table.category),
   index("recipes_subcategory_slug_idx").on(table.subcategorySlug),
+]);
+
+export const authors = pgTable("authors", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 180 }).notNull(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  role: varchar("role", { length: 80 }),
+  active: boolean("active"),
+});
+
+export const categories = pgTable("categories", {
+  id: integer("id").primaryKey(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  name: varchar("name", { length: 180 }).notNull(),
+  parentId: integer("parent_id"),
+  active: boolean("active"),
+  riskLevel: varchar("risk_level", { length: 24 }),
+  agentEnabled: boolean("agent_enabled"),
+});
+
+export const tipTopics = pgTable("tip_topics", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 180 }).notNull(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  description: text("description"),
+  active: boolean("active"),
+  sortOrder: integer("sort_order"),
+});
+
+export const tags = pgTable("tags", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull(),
+});
+
+export const images = pgTable("images", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fileUrl: text("file_url").notNull(),
+  storageKey: text("storage_key"),
+  fileName: varchar("file_name", { length: 255 }),
+  altText: varchar("alt_text", { length: 240 }),
+  caption: text("caption"),
+  contentType: varchar("content_type", { length: 120 }),
+  fileSize: bigint("file_size", { mode: "number" }),
+  width: integer("width"),
+  height: integer("height"),
+  imageType: varchar("image_type", { length: 40 }),
+  sourceType: varchar("source_type", { length: 40 }),
+  generationMeta: jsonb("generation_meta").$type<Record<string, unknown>>(),
+  active: boolean("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+});
+
+export const articles = pgTable("articles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  excerpt: text("excerpt"),
+  content: text("content").notNull(),
+  contentType: varchar("content_type", { length: 32 }).notNull().default("article"),
+  topicId: integer("topic_id"),
+  authorId: integer("author_id"),
+  coverImageUrl: text("cover_image_url"),
+  coverImageAlt: varchar("cover_image_alt", { length: 240 }),
+  metaTitle: varchar("meta_title", { length: 180 }),
+  metaDescription: varchar("meta_description", { length: 320 }),
+  canonicalUrl: text("canonical_url"),
+  tags: text("tags").array().notNull().default([]),
+  generationMeta: jsonb("generation_meta").$type<Record<string, unknown>>(),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  reviewStatus: varchar("review_status", { length: 32 }).notNull().default("pending"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+}, (table) => [
+  foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "articles_author_id_fkey" }),
+  foreignKey({ columns: [table.topicId], foreignColumns: [tipTopics.id], name: "articles_topic_id_fkey" }),
+]);
+
+export const articleTags = pgTable("article_tags", {
+  id: serial("id").primaryKey(),
+  articleId: uuid("article_id").notNull(),
+  tagId: integer("tag_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_tags_article_id_fkey" }),
+  foreignKey({ columns: [table.tagId], foreignColumns: [tags.id], name: "article_tags_tag_id_fkey" }),
+]);
+
+export const articleImages = pgTable("article_images", {
+  id: serial("id").primaryKey(),
+  articleId: uuid("article_id").notNull(),
+  imageId: uuid("image_id"),
+  imageUrl: text("image_url"),
+  altText: varchar("alt_text", { length: 240 }),
+  caption: text("caption"),
+  imageRole: varchar("image_role", { length: 40 }).notNull().default("inline"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_images_article_id_fkey" }),
+  foreignKey({ columns: [table.imageId], foreignColumns: [images.id], name: "article_images_image_id_fkey" }),
 ]);
 
 export type User = typeof users.$inferSelect;
@@ -81,3 +191,5 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
 export type Recipe = typeof recipes.$inferSelect;
 export type InsertRecipe = typeof recipes.$inferInsert;
+export type ArticleRecord = typeof articles.$inferSelect;
+export type InsertArticle = typeof articles.$inferInsert;

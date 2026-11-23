@@ -23,6 +23,7 @@ export interface RouteMeta {
 export const PRERENDER_PATHS = [
   "/",
   "/receitas",
+  "/dicas",
   "/promocao",
   "/promocoes",
   "/buffet-para-festas",

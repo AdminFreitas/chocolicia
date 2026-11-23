@@ -41,10 +41,10 @@ var WA_SAUDACAO = waLink(
 );
 
 // server/recipeDb.ts
-import { and, desc, eq as eq2, gt, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq as eq2, gt, gte, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 
 // drizzle/schema.ts
-import { index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, foreignKey, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 var userRole = pgEnum("user_role", ["user", "admin"]);
 var recipeStatus = pgEnum("recipe_status", ["draft", "published", "failed"]);
 var users = pgTable("users", {
@@ -104,13 +104,115 @@ var recipes = pgTable("recipes", {
   publishedAt: timestamp("published_at", { withTimezone: true }),
   aiModel: varchar("ai_model", { length: 120 }),
   generationMeta: jsonb("generation_meta").$type().notNull().default({}),
+  agentTopicSlug: varchar("agent_topic_slug", { length: 180 }),
+  agentIdempotencyKey: varchar("agent_idempotency_key", { length: 128 }),
+  agentRequestHash: varchar("agent_request_hash", { length: 64 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   uniqueIndex("recipes_slug_uidx").on(table.slug),
+  uniqueIndex("recipes_agent_topic_slug_uidx").on(table.agentTopicSlug),
+  uniqueIndex("recipes_agent_idempotency_key_uidx").on(table.agentIdempotencyKey),
   index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()),
   index("recipes_category_idx").on(table.category),
   index("recipes_subcategory_slug_idx").on(table.subcategorySlug)
+]);
+var authors = pgTable("authors", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 180 }).notNull(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  role: varchar("role", { length: 80 }),
+  active: boolean("active")
+});
+var categories = pgTable("categories", {
+  id: integer("id").primaryKey(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  name: varchar("name", { length: 180 }).notNull(),
+  parentId: integer("parent_id"),
+  active: boolean("active"),
+  riskLevel: varchar("risk_level", { length: 24 }),
+  agentEnabled: boolean("agent_enabled")
+});
+var tipTopics = pgTable("tip_topics", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 180 }).notNull(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  description: text("description"),
+  active: boolean("active"),
+  sortOrder: integer("sort_order")
+});
+var tags = pgTable("tags", {
+  id: integer("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull()
+});
+var images = pgTable("images", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  fileUrl: text("file_url").notNull(),
+  storageKey: text("storage_key"),
+  fileName: varchar("file_name", { length: 255 }),
+  altText: varchar("alt_text", { length: 240 }),
+  caption: text("caption"),
+  contentType: varchar("content_type", { length: 120 }),
+  fileSize: bigint("file_size", { mode: "number" }),
+  width: integer("width"),
+  height: integer("height"),
+  imageType: varchar("image_type", { length: 40 }),
+  sourceType: varchar("source_type", { length: 40 }),
+  generationMeta: jsonb("generation_meta").$type(),
+  active: boolean("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+});
+var articles = pgTable("articles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 180 }).notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  excerpt: text("excerpt"),
+  content: text("content").notNull(),
+  contentType: varchar("content_type", { length: 32 }).notNull().default("article"),
+  topicId: integer("topic_id"),
+  authorId: integer("author_id"),
+  coverImageUrl: text("cover_image_url"),
+  coverImageAlt: varchar("cover_image_alt", { length: 240 }),
+  metaTitle: varchar("meta_title", { length: 180 }),
+  metaDescription: varchar("meta_description", { length: 320 }),
+  canonicalUrl: text("canonical_url"),
+  tags: text("tags").array().notNull().default([]),
+  generationMeta: jsonb("generation_meta").$type(),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  reviewStatus: varchar("review_status", { length: 32 }).notNull().default("pending"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+}, (table) => [
+  foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "articles_author_id_fkey" }),
+  foreignKey({ columns: [table.topicId], foreignColumns: [tipTopics.id], name: "articles_topic_id_fkey" })
+]);
+var articleTags = pgTable("article_tags", {
+  id: serial("id").primaryKey(),
+  articleId: uuid("article_id").notNull(),
+  tagId: integer("tag_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_tags_article_id_fkey" }),
+  foreignKey({ columns: [table.tagId], foreignColumns: [tags.id], name: "article_tags_tag_id_fkey" })
+]);
+var articleImages = pgTable("article_images", {
+  id: serial("id").primaryKey(),
+  articleId: uuid("article_id").notNull(),
+  imageId: uuid("image_id"),
+  imageUrl: text("image_url"),
+  altText: varchar("alt_text", { length: 240 }),
+  caption: text("caption"),
+  imageRole: varchar("image_role", { length: 40 }).notNull().default("inline"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_images_article_id_fkey" }),
+  foreignKey({ columns: [table.imageId], foreignColumns: [images.id], name: "article_images_image_id_fkey" })
 ]);
 
 // server/db.ts
@@ -187,17 +289,29 @@ async function getPublishedRecipeSlugs(dbOverride) {
   return db.select({ slug: recipes.slug, updatedAt: recipes.updatedAt }).from(recipes).where(and(eq2(recipes.status, "published"), isNotNull(recipes.publishedAt))).orderBy(desc(recipes.publishedAt));
 }
 
+// server/articlesDb.ts
+import { and as and2, count as count2, desc as desc2, eq as eq3, gte as gte2, isNotNull as isNotNull2, or as or2, sql as sql2 } from "drizzle-orm";
+function requireDb2(db) {
+  if (!db) throw new Error("A base de dados n\xE3o est\xE1 configurada");
+  return db;
+}
+async function getPublishedArticleSlugs() {
+  const db = requireDb2(await getDb());
+  return db.select({ slug: articles.slug, updatedAt: articles.updatedAt }).from(articles).where(and2(eq3(articles.status, "published"), isNotNull2(articles.publishedAt))).orderBy(desc2(articles.publishedAt));
+}
+
 // server/recipeSitemap.ts
 function xmlEscape(value) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 async function generateRecipesSitemap() {
-  const recipes2 = await getPublishedRecipeSlugs();
-  const staticPaths = ["/", "/receitas", "/buffet-para-festas", "/bolos-personalizados", "/doces-para-festas", "/areas-atendidas"];
+  const [recipes2, articles2] = await Promise.all([getPublishedRecipeSlugs(), getPublishedArticleSlugs()]);
+  const staticPaths = ["/", "/receitas", "/dicas", "/buffet-para-festas", "/bolos-personalizados", "/doces-para-festas", "/areas-atendidas"];
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const urls = [
     ...staticPaths.map((page) => `<url><loc>${xmlEscape(`${SITE.url}${page === "/" ? "/" : page}`)}</loc><lastmod>${today}</lastmod></url>`),
-    ...recipes2.map((recipe) => `<url><loc>${xmlEscape(`${SITE.url}/receitas/${encodeURIComponent(recipe.slug)}`)}</loc><lastmod>${recipe.updatedAt.toISOString()}</lastmod></url>`)
+    ...recipes2.map((recipe) => `<url><loc>${xmlEscape(`${SITE.url}/receitas/${encodeURIComponent(recipe.slug)}`)}</loc><lastmod>${recipe.updatedAt.toISOString()}</lastmod></url>`),
+    ...articles2.map((article) => `<url><loc>${xmlEscape(`${SITE.url}/dicas/${encodeURIComponent(article.slug)}`)}</loc><lastmod>${(article.updatedAt ?? /* @__PURE__ */ new Date(0)).toISOString()}</lastmod></url>`)
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;

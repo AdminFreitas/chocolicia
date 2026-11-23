@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 import type { RecipeInput } from "../shared/recipes";
 import { recipes, type Recipe } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -121,7 +121,10 @@ export async function getAllPublishedRecipeTitles(dbOverride?: RecipeDb) {
     .orderBy(desc(recipes.publishedAt));
 }
 
-export async function insertRecipe(input: RecipeInput & { slug: string }) {
+export async function insertRecipe(
+  input: RecipeInput & { slug: string },
+  agent?: { topicSlug: string; idempotencyKey: string; requestHash: string },
+) {
   const db = requireDb(await getDb());
   const now = new Date();
   const publishedAt = input.status === "published" ? (input.publishedAt ?? now) : null;
@@ -150,9 +153,38 @@ export async function insertRecipe(input: RecipeInput & { slug: string }) {
     publishedAt,
     aiModel: input.aiModel ?? null,
     generationMeta: input.generationMeta,
+    agentTopicSlug: agent?.topicSlug ?? null,
+    agentIdempotencyKey: agent?.idempotencyKey ?? null,
+    agentRequestHash: agent?.requestHash ?? null,
     updatedAt: now,
   }).returning();
   return row;
+}
+
+export async function getAgentRecipeByIdempotencyKey(key: string) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(recipes).where(eq(recipes.agentIdempotencyKey, key)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function getAgentRecipeByTopicSlug(topicSlug: string) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(recipes).where(eq(recipes.agentTopicSlug, topicSlug)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function getAgentRecipeBySlug(slug: string) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(recipes).where(eq(recipes.slug, slug)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function countAgentRecipesSince(status: "draft" | "published", since: Date): Promise<number> {
+  const db = requireDb(await getDb());
+  const timestamp = status === "draft" ? recipes.createdAt : recipes.publishedAt;
+  const rows = await db.select({ value: count() }).from(recipes)
+    .where(and(eq(recipes.status, status), gte(timestamp, since)));
+  return Number(rows[0]?.value ?? 0);
 }
 
 export async function insertFailedRecipe(details: { slug: string; title: string; error: string; aiModel?: string }) {

@@ -100,6 +100,62 @@ export const recipeInputSchema = z.object({
 
 export type RecipeInput = z.infer<typeof recipeInputSchema>;
 
+const agentCoverSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("stock"),
+    provider: z.string().trim().min(1).max(40),
+    sourceImageUrl: z.string().url().max(2048).refine((value) => value.startsWith("https://")),
+    sourcePageUrl: z.string().url().max(2048).refine((value) => value.startsWith("https://")),
+    author: z.string().max(200),
+    license: z.string().trim().min(1).max(120),
+    attributionText: z.string().max(400),
+  }),
+  z.object({
+    mode: z.literal("generate"),
+    imagePrompt: z.string().trim().min(1).max(2000),
+  }),
+]);
+
+export const recipeInputSchemaV1 = z.object({
+  title: z.string().trim().min(5).max(180),
+  slug: z.string().trim().min(3).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  excerpt: z.string().trim().min(20).max(160),
+  intro: z.string().max(2000).optional(),
+  subcategorySlug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  secondarySubcategorySlugs: z.array(z.string().trim().min(1).max(120)).max(2).default([]),
+  prepTimeMin: z.number().int().min(1).max(1440),
+  cookTimeMin: z.number().int().min(0).max(1440).default(0),
+  restTimeMin: z.number().int().min(0).max(10080).default(0),
+  servings: z.number().int().min(1).max(500),
+  yieldLabel: z.string().max(80).optional(),
+  difficulty: z.enum(["Fácil", "Média", "Difícil"]),
+  ingredients: z.array(z.object({
+    name: z.string().trim().min(1).max(100),
+    items: z.array(z.object({
+      name: z.string().trim().min(1).max(180),
+      quantity: z.string().trim().min(1).max(80),
+      unit: z.string().trim().min(1).max(40),
+      note: z.string().max(180).optional(),
+      ingredientSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).nullable().optional(),
+    })).min(1).max(80),
+  })).min(1).max(20),
+  steps: z.array(recipeStepSchema).min(4).max(20),
+  tips: z.array(z.string().trim().min(1).max(1000)).max(5).default([]),
+  storageNotes: z.string().max(3000).default(""),
+  faq: z.array(recipeFaqSchema).max(12).default([]),
+  tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  occasions: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  collections: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  diet: z.array(z.enum(["vegetariana", "vegana"])).max(2).default([]),
+  cover: agentCoverSchema,
+  coverImageAlt: z.string().trim().min(8).max(240),
+  status: z.enum(["draft", "published"]).default("draft"),
+  aiModel: z.string().trim().min(1).max(120),
+  generationMeta: z.record(z.string(), z.unknown()),
+});
+
+export type RecipeInputV1 = z.infer<typeof recipeInputSchemaV1>;
+
 export type RecipeSummary = Pick<
   RecipeInput,
   | "slug"

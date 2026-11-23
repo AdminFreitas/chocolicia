@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "tsx scripts/generate-og-image.mts && vite build && vite build --ssr && tsx scripts/prerender.ts && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && esbuild server/api/index.ts server/api/recipe-page.ts server/api/recipes-sitemap.ts --platform=node --packages=external --bundle --format=esm --outdir=api",
+    "build": "tsx scripts/generate-og-image.mts && vite build && vite build --ssr && tsx scripts/prerender.ts && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && esbuild server/api/index.ts server/api/recipe-page.ts server/api/recipes-sitemap.ts server/api/article-page.ts --platform=node --packages=external --bundle --format=esm --outdir=api",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
+    "@vercel/blob": "^1.1.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
