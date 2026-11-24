@@ -113,6 +113,7 @@ async function createV1Recipe(req: Request, res: Response) {
       res.setHeader("Idempotent-Replay", "true");
       res.status(201).json({
         id: prior.id,
+        title: prior.title,
         slug: prior.slug,
         status: prior.status,
         url: `${req.protocol}://${req.get("host")}/receitas/${encodeURIComponent(prior.slug)}`,
@@ -206,8 +207,10 @@ async function createV1Recipe(req: Request, res: Response) {
     }, { topicSlug, idempotencyKey, requestHash });
     res.status(201).json({
       id: recipe.id,
+      title: recipe.title,
       slug: recipe.slug,
       status: recipe.status,
+      publishedAt: recipe.publishedAt,
       url: `${req.protocol}://${req.get("host")}/receitas/${encodeURIComponent(recipe.slug)}`,
     });
   } catch (error) {
