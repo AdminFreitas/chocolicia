@@ -13,22 +13,7 @@ import {
 } from "./articlesDb";
 import { toSlug } from "./recipeDb";
 
-const PHASE_RISKS: Record<number, Set<string>> = {
-  0: new Set(["low"]),
-  1: new Set(["low"]),
-  2: new Set(["low", "medium"]),
-  3: new Set(["low", "medium", "high"]),
-};
-const ARTICLE_RISK: Record<string, string> = {
-  "montagem-e-apresentacao": "low",
-  ornamentacao: "low",
-  preparo: "medium",
-  "equipamentos-uso": "medium",
-  "equipamentos-compra": "medium",
-  negocios: "medium",
-};
-const BLOCKED_TIP_CLAIMS = /\b(?:marca|modelo|loja|pre[cç]o|lucro|faturamento|garantido|infal[ií]vel|cura|emagrece|detox|testamos|testada)\b/i;
-const SAFETY_TERMS = /\b(?:conserva[cç][aã]o|seguran[cç]a|temperatura|validade|armazenar|armazenamento)\b/i;
+const MEDICAL_CLAIMS = /\b(?:cura|curar|emagrece|emagrecimento|detox|medicinal|terap[eê]utico|previne\s+(?:doenças?|diabetes|câncer)|trata\s+(?:doenças?|diabetes|câncer)|tratamento\s+de\s+(?:doenças?|diabetes|câncer))\b/i;
 
 function saoPauloDayStart(): Date {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -48,10 +33,6 @@ function cap(name: string, fallback: number): number | null {
   return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
-function allowedRisk(topic: string, phase: number): boolean {
-  return Boolean(PHASE_RISKS[phase]?.has(ARTICLE_RISK[topic]));
-}
-
 function articleUrl(slug: string): string {
   const base = (process.env.SITE_PUBLIC_URL ?? "https://www.chocolicia.site").replace(/\/$/, "");
   return `${base}/dicas/${encodeURIComponent(slug)}`;
@@ -61,16 +42,12 @@ export function createArticlesRouter() {
   const router = express.Router();
 
   router.get("/topics", (_req, res) => {
-    const phase = Number(process.env.AGENT_PHASE ?? "0");
-    const allowed = PHASE_RISKS[phase] ?? PHASE_RISKS[0];
     res.setHeader("Cache-Control", "public, max-age=300");
     res.json({
       items: TIP_TOPICS.map((topic) => ({
         slug: topic.slug,
         name: topic.name,
-        riskLevel: topic.riskLevel,
         active: true,
-        agentEnabled: allowed.has(topic.riskLevel),
       })),
     });
   });
@@ -154,7 +131,6 @@ export function createArticlesRouter() {
       const meta = clean.generationMeta;
       const topicSlug = String(meta.topic_slug ?? "");
       const runId = String(meta.run_id ?? "");
-      const phase = Number(process.env.AGENT_PHASE ?? "0");
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topicSlug) || !runId) {
         agentError(res, 400, "validation_failed", "generationMeta precisa conter run_id e topic_slug válidos.");
         return;
@@ -163,32 +139,8 @@ export function createArticlesRouter() {
         agentError(res, 422, "topic_not_enabled", "Somente assuntos de dica habilitados podem ser recebidos nesta fase.");
         return;
       }
-      if (!allowedRisk(clean.tipTopic, phase)) {
-        agentError(res, 422, "topic_not_enabled", "O nível de risco do assunto não é permitido na fase atual.");
-        return;
-      }
-      if (clean.categorySlug) {
-        agentError(res, 422, "category_not_enabled", "A categoria de dica não está habilitada.");
-        return;
-      }
-      const words = clean.bodyMd.match(/[A-Za-zÀ-ÿ0-9]+/g)?.length ?? 0;
-      if (words < 150 || words > 400 || /<\/?[a-z][^>]*>/i.test(clean.bodyMd) || BLOCKED_TIP_CLAIMS.test(clean.bodyMd)) {
-        agentError(res, 422, "content_rejected", "A dica não passou pelas regras editoriais de tamanho e alegações.");
-        return;
-      }
-      const domains = new Set(clean.sources.map((source) => {
-        try { return new URL(source.url).hostname.toLowerCase(); } catch { return ""; }
-      }).filter(Boolean));
-      if (domains.size < 2) {
-        agentError(res, 422, "sources_insufficient", "A dica precisa de fontes em dois domínios distintos.");
-        return;
-      }
-      if (SAFETY_TERMS.test(clean.bodyMd)) {
-        agentError(res, 422, "technical_source_required", "A base de fontes técnicas e oficiais ainda não foi aprovada.");
-        return;
-      }
-      if (clean.type === "tip" && ["equipamentos-compra", "equipamentos-uso", "negocios"].includes(clean.tipTopic) && BLOCKED_TIP_CLAIMS.test(clean.bodyMd)) {
-        agentError(res, 422, "content_rejected", "A dica viola as restrições do assunto.");
+      if (/<\/?[a-z][^>]*>/i.test(clean.bodyMd) || MEDICAL_CLAIMS.test(clean.bodyMd)) {
+        agentError(res, 422, "content_rejected", "O conteúdo contém marcação HTML ou alegação médica não permitida.");
         return;
       }
       const approvedModels = (process.env.AGENT_APPROVED_MODELS ?? "").split(",").map((item) => item.trim()).filter(Boolean);
