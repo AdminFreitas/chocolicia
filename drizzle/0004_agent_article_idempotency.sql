@@ -97,8 +97,6 @@ CREATE TABLE IF NOT EXISTS "article_images" (
   "sort_order" integer DEFAULT 0 NOT NULL,
   "created_at" timestamp with time zone,
   CONSTRAINT "article_images_article_id_fkey" FOREIGN KEY ("article_id") REFERENCES "articles"("id"),
-  CONSTRAINT "article_images_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id"),
-  CONSTRAINT "article_images_article_id_fkey" FOREIGN KEY ("article_id") REFERENCES "articles"("id"),
   CONSTRAINT "article_images_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id")
 );
 --> statement-breakpoint
