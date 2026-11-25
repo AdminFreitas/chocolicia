@@ -103,6 +103,8 @@ async function createV1Recipe(req: Request, res: Response) {
   }
   const clean = sanitizeDeep(parsed.data);
   const requestHash = hashRequest(clean);
+  // A autorização do status precisa ocorrer antes do replay idempotente.
+  if (!publishingAllowed(scope, clean.status, res)) return;
   try {
     const prior = await getAgentRecipeByIdempotencyKey(idempotencyKey);
     if (prior) {
@@ -132,7 +134,6 @@ async function createV1Recipe(req: Request, res: Response) {
       agentError(res, 422, "subcategory_not_enabled", "A subcategoria não está habilitada para recebimento.");
       return;
     }
-    if (!publishingAllowed(scope, clean.status, res)) return;
     const dayStart = saoPauloDayStart();
     const cap = clean.status === "published"
       ? configuredCap("AGENT_DAILY_CAP_RECIPES", 1)
@@ -216,6 +217,24 @@ async function createV1Recipe(req: Request, res: Response) {
   } catch (error) {
     const dbError = error as { code?: string };
     if (dbError.code === "23505") {
+      // Duas tentativas idênticas podem chegar juntas. A constraint única e
+      // esta releitura transformam a segunda resposta em replay seguro.
+      const prior = await getAgentRecipeByIdempotencyKey(idempotencyKey).catch(() => null);
+      if (prior) {
+        if (prior.agentRequestHash !== requestHash) {
+          agentError(res, 422, "idempotency_key_reuse", "A mesma chave foi usada com outro conteúdo.");
+          return;
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        res.status(201).json({
+          id: prior.id,
+          title: prior.title,
+          slug: prior.slug,
+          status: prior.status,
+          url: `${req.protocol}://${req.get("host")}/receitas/${encodeURIComponent(prior.slug)}`,
+        });
+        return;
+      }
       agentError(res, 409, "topic_exists", "Já existe conteúdo com esta pauta ou chave idempotente.");
       return;
     }
