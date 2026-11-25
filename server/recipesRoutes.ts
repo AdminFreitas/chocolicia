@@ -2,7 +2,6 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeInputSchemaV1, recipeListQuerySchema } from "../shared/recipes";
 import { getAgentRecipeByIdempotencyKey, getAgentRecipeByTopicSlug, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug, countAgentRecipesSince } from "./recipeDb";
-import { runDailyRecipeGeneration } from "./recipeAgent";
 import { agentError, agentTokensConfigured, hashRequest, publishingAllowed, requestId, requireV1, resolveAgentScope } from "./agentAuth";
 import { processAgentCover } from "./agentImages";
 
@@ -280,28 +279,6 @@ export function createRecipesRouter() {
       res.status(503).json({ error: "Não foi possível carregar as receitas." });
     }
   });
-
-  const dailyHandler = async (req: Request, res: Response) => {
-    const expected = process.env.CRON_SECRET;
-    if (!expected) {
-      res.status(503).json({ error: "O cron diário não está configurado." });
-      return;
-    }
-    if (!timingSafeTokenEquals(readBearer(req), expected)) {
-      res.status(401).json({ error: "Não autorizado." });
-      return;
-    }
-    try {
-      const result = await runDailyRecipeGeneration();
-      res.status(result.status === "failed" ? 500 : 201).json(result);
-    } catch (error) {
-      console.error("[Recipes] daily generation:", error);
-      res.status(500).json({ error: "A geração diária falhou." });
-    }
-  };
-
-  router.get("/generate-daily", dailyHandler);
-  router.post("/generate-daily", dailyHandler);
 
   router.post("/", async (req, res) => {
     if (req.header("x-contract-version") !== undefined) {
