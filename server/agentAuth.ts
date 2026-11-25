@@ -27,7 +27,9 @@ export function resolveAgentScope(req: Request): AgentScope | null {
   if (matchesPublish) return "publish";
   if (matchesDraft) return "draft";
   if (legacy && tokenEquals(received, legacy)) {
-    // RECIPES_AGENT_TOKEN is the original production contract. An explicit\n    // published request is a publish operation; draft requests remain supported.\n    return "publish";
+    // O token legado tem escopo publish por compatibilidade.
+    // A publicação continua bloqueada sem AGENT_PUBLISHING_ENABLED e fase >= 1.
+    return "publish";
   }
   return null;
 }
