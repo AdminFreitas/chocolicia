@@ -109,7 +109,7 @@ export const tipTopics = pgTable("tip_topics", {
 });
 
 export const tags = pgTable("tags", {
-  id: integer("id").primaryKey(),
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 120 }).notNull(),
   slug: varchar("slug", { length: 120 }).notNull(),
 });
