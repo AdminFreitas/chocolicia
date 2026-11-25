@@ -156,6 +156,10 @@ export const articles = pgTable("articles", {
 }, (table) => [
   foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "articles_author_id_fkey" }),
   foreignKey({ columns: [table.topicId], foreignColumns: [tipTopics.id], name: "articles_topic_id_fkey" }),
+  uniqueIndex("articles_agent_idempotency_key_uidx")
+    .on(sql`(${table.generationMeta} ->> 'agent_idempotency_key')`),
+  uniqueIndex("articles_agent_topic_slug_uidx")
+    .on(sql`(${table.generationMeta} ->> 'agent_topic_slug')`),
 ]);
 
 export const articleTags = pgTable("article_tags", {
