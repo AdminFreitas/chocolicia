@@ -4,12 +4,12 @@ export const ARTICLE_TYPES = ["article", "tip", "technique", "news"] as const;
 export const ARTICLE_STATUSES = ["draft", "published", "archived"] as const;
 export const ARTICLE_REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
 export const TIP_TOPICS = [
-  { slug: "montagem-e-apresentacao", name: "Montagem e apresentação", riskLevel: "low" },
-  { slug: "ornamentacao", name: "Ornamentação", riskLevel: "low" },
-  { slug: "preparo", name: "Preparo", riskLevel: "medium" },
-  { slug: "equipamentos-uso", name: "Uso de equipamentos", riskLevel: "medium" },
-  { slug: "equipamentos-compra", name: "Escolha de equipamentos", riskLevel: "medium" },
-  { slug: "negocios", name: "Negócios na culinária", riskLevel: "medium" },
+  { slug: "montagem-e-apresentacao", name: "Montagem e apresentação" },
+  { slug: "ornamentacao", name: "Ornamentação" },
+  { slug: "preparo", name: "Preparo" },
+  { slug: "equipamentos-uso", name: "Uso de equipamentos" },
+  { slug: "equipamentos-compra", name: "Escolha de equipamentos" },
+  { slug: "negocios", name: "Negócios na culinária" },
 ] as const;
 export const articleSourceSchema = z.object({ name: z.string().trim().min(1).max(200), title: z.string().trim().min(1).max(300), url: z.string().url().max(2048) });
 const coverStockSchema = z.object({ mode: z.literal("stock"), provider: z.string().trim().min(1).max(40), sourceImageUrl: z.string().url().max(2048).refine((value) => value.startsWith("https://")), sourcePageUrl: z.string().url().max(2048).refine((value) => value.startsWith("https://")), author: z.string().max(200), license: z.string().trim().min(1).max(120), attributionText: z.string().max(400) });
