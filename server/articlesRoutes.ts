@@ -134,6 +134,8 @@ export function createArticlesRouter() {
     }
     const clean = parsed.data;
     const requestHash = hashRequest(clean);
+    // Não permitir replay de conteúdo publicado com token de rascunho.
+    if (!publishingAllowed(scope, clean.status, res)) return;
     try {
       const prior = await getArticleByIdempotencyKey(idempotencyKey);
       if (prior) {
@@ -169,7 +171,6 @@ export function createArticlesRouter() {
         agentError(res, 422, "category_not_enabled", "A categoria de dica não está habilitada.");
         return;
       }
-      if (!publishingAllowed(scope, clean.status, res)) return;
       const words = clean.bodyMd.match(/[A-Za-zÀ-ÿ0-9]+/g)?.length ?? 0;
       if (words < 150 || words > 400 || /<\/?[a-z][^>]*>/i.test(clean.bodyMd) || BLOCKED_TIP_CLAIMS.test(clean.bodyMd)) {
         agentError(res, 422, "content_rejected", "A dica não passou pelas regras editoriais de tamanho e alegações.");
@@ -236,6 +237,20 @@ export function createArticlesRouter() {
     } catch (error) {
       const dbError = error as { code?: string };
       if (dbError.code === "23505") {
+        // Releitura após conflito de índice: mesma chave e mesmo corpo = replay.
+        const prior = await getArticleByIdempotencyKey(idempotencyKey).catch(() => null);
+        if (prior) {
+          const priorRequestHash = typeof prior.generationMeta?.agent_request_hash === "string"
+            ? prior.generationMeta.agent_request_hash
+            : null;
+          if (priorRequestHash !== requestHash) {
+            agentError(res, 422, "idempotency_key_reuse", "A mesma chave foi usada com outro conteúdo.");
+            return;
+          }
+          res.setHeader("Idempotent-Replay", "true");
+          res.status(201).json({ id: prior.id, slug: prior.slug, status: prior.status, url: articleUrl(prior.slug) });
+          return;
+        }
         agentError(res, 409, "topic_exists", "Já existe conteúdo com esta pauta ou chave idempotente.");
         return;
       }
