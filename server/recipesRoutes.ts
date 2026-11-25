@@ -46,9 +46,18 @@ function publicRecipe<T>(row: T): T {
 }
 
 const V1_RECIPE_CATEGORIES: Record<string, { category: string; subcategory: string }> = {
-  "bolos-simples": { category: "Bolos", subcategory: "Bolos simples" },
-  "brigadeiros-e-docinhos": { category: "Brigadeiros e docinhos", subcategory: "Brigadeiros e docinhos" },
+  "bolos-de-chocolate": { category: "Bolos", subcategory: "Bolos de chocolate" },
+  "bolos-de-aniversario": { category: "Bolos", subcategory: "Bolos de aniversário" },
+  "bolos-caseiros": { category: "Bolos", subcategory: "Bolos caseiros" },
+  "bolos-recheados": { category: "Bolos", subcategory: "Bolos recheados" },
+  "bolos-especiais": { category: "Bolos", subcategory: "Bolos especiais" },
+  "brigadeiros": { category: "Brigadeiros e docinhos", subcategory: "Brigadeiros" },
+  "docinhos": { category: "Brigadeiros e docinhos", subcategory: "Docinhos" },
   "trufas-e-bombons": { category: "Chocolates", subcategory: "Trufas e bombons" },
+  "tortas-doces": { category: "Tortas", subcategory: "Tortas doces" },
+  "mousses": { category: "Sobremesas", subcategory: "Mousses" },
+  "docinhos-para-festa": { category: "Festas e buffet", subcategory: "Docinhos para festa" },
+  "celebracoes": { category: "Datas especiais", subcategory: "Celebrações" },
   "doces-de-colher": { category: "Sobremesas", subcategory: "Doces de colher" },
 };
 
