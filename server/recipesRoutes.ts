@@ -308,6 +308,7 @@ export function createRecipesRouter() {
       await createV1Recipe(req, res);
       return;
     }
+    requestId(req, res);
     const expected = process.env.RECIPES_AGENT_TOKEN;
     if (!expected) {
       res.status(503).json({ error: "A publicação por agente não está configurada." });
@@ -329,6 +330,29 @@ export function createRecipesRouter() {
       return;
     }
     const clean = sanitizeDeep(parsed.data);
+    // O token legado equivale a publish; a API mantém o bloqueio independente
+    // do workflow que fez a chamada.
+    if (!publishingAllowed("publish", clean.status, res)) return;
+
+    const idempotencyKey = req.header("idempotency-key")?.trim() ?? "";
+    if (idempotencyKey && !/^[a-f0-9]{64}$/i.test(idempotencyKey)) {
+      res.status(400).json({ error: "Idempotency-Key deve conter um SHA-256 hexadecimal.", code: "idempotency_key_invalid" });
+      return;
+    }
+    const requestHash = idempotencyKey ? hashRequest(clean) : "";
+    if (idempotencyKey) {
+      const prior = await getAgentRecipeByIdempotencyKey(idempotencyKey);
+      if (prior) {
+        if (prior.agentRequestHash !== requestHash) {
+          res.status(422).json({ error: "A mesma chave foi usada com outro conteúdo.", code: "idempotency_key_reuse" });
+          return;
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        res.status(201).json(prior);
+        return;
+      }
+    }
+
     if (clean.subcategorySlug) {
       const subcategories = RECIPE_TAXONOMY[clean.category] ?? [];
       const subcategory = subcategories.find((item) => item.slug === clean.subcategorySlug);
@@ -349,12 +373,27 @@ export function createRecipesRouter() {
       return;
     }
     try {
-      const recipe = await insertRecipe({ ...clean, slug });
+      const agentMeta = idempotencyKey
+        ? { topicSlug: slug, idempotencyKey, requestHash }
+        : undefined;
+      const recipe = await insertRecipe({ ...clean, slug }, agentMeta);
       res.status(201).json(recipe);
     } catch (error) {
       const dbError = error as { code?: string };
       if (dbError.code === "23505") {
-        res.status(409).json({ error: "Já existe uma receita com este slug." });
+        if (idempotencyKey) {
+          const prior = await getAgentRecipeByIdempotencyKey(idempotencyKey).catch(() => null);
+          if (prior) {
+            if (prior.agentRequestHash !== requestHash) {
+              res.status(422).json({ error: "A mesma chave foi usada com outro conteúdo.", code: "idempotency_key_reuse" });
+              return;
+            }
+            res.setHeader("Idempotent-Replay", "true");
+            res.status(201).json(prior);
+            return;
+          }
+        }
+        res.status(409).json({ error: "Já existe uma receita com este slug.", code: "topic_exists" });
         return;
       }
       console.error("[Recipes] create:", error);
