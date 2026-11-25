@@ -65,7 +65,17 @@ export function publishingAllowed(scope: AgentScope, status: "draft" | "publishe
     agentError(res, 403, "scope_insufficient", "O token não permite publicar conteúdo.");
     return false;
   }
-  // AUTO_PUBLISH controls only internal generation. It must not silently\n  // downgrade or reject an explicitly authenticated publish request.\n  return true;
+  // A API também aplica o bloqueio de publicação; não confia apenas no runner.
+  if ((process.env.AGENT_PUBLISHING_ENABLED ?? "false").trim().toLowerCase() !== "true") {
+    agentError(res, 403, "publishing_disabled", "A publicação pelo agente está desabilitada neste ambiente.");
+    return false;
+  }
+  const phase = Number(process.env.AGENT_PHASE ?? "0");
+  if (!Number.isInteger(phase) || phase < 1 || phase > 3) {
+    agentError(res, 403, "phase_not_allowed", "A fase atual não permite publicar conteúdo.");
+    return false;
+  }
+  return true;
 }
 
 export function requireV1(req: Request, res: Response): boolean {
