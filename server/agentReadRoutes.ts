@@ -1,6 +1,6 @@
 import express from "express";
 import { TIP_TOPICS } from "../shared/articles";
-import { getAgentArticleByTopicSlug } from "./articlesDb";
+import { getAgentArticleBySlug, getAgentArticleByTitle, getAgentArticleByTopicSlug } from "./articlesDb";
 import { agentError, agentTokensConfigured, resolveAgentScope } from "./agentAuth";
 import { getAgentRecipeBySlug, getAgentRecipeByTopicSlug, getPublishedRecipeTitlesSince } from "./recipeDb";
 
@@ -18,9 +18,7 @@ const RECIPE_AGENT_TAXONOMY = {
   tipTopics: TIP_TOPICS.map((item) => ({
     slug: item.slug,
     name: item.name,
-    riskLevel: item.riskLevel,
     active: true,
-    agentEnabled: item.riskLevel === "low",
   })),
 };
 
@@ -90,10 +88,23 @@ export function createAgentReadRouter() {
           status: article.status, generation_meta: article.generationMeta,
         });
       } else if (slug) {
-        const recipe = await getAgentRecipeBySlug(slug);
+        const [recipe, article] = await Promise.all([
+          getAgentRecipeBySlug(slug),
+          getAgentArticleBySlug(slug),
+        ]);
         if (recipe) found.push({
           content_type: "recipe", id: recipe.id, slug: recipe.slug, title: recipe.title,
           status: recipe.status, generation_meta: recipe.generationMeta,
+        });
+        if (article) found.push({
+          content_type: "article", id: article.id, slug: article.slug, title: article.title,
+          status: article.status, generation_meta: article.generationMeta,
+        });
+      } else if (title) {
+        const article = await getAgentArticleByTitle(title);
+        if (article) found.push({
+          content_type: "article", id: article.id, slug: article.slug, title: article.title,
+          status: article.status, generation_meta: article.generationMeta,
         });
       }
       res.json({ exists: found.length > 0, items: found });
