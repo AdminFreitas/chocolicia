@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, isNotNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { articleImages, articleTags, articles, authors, categories, images, tags, tipTopics, type ArticleRecord } from "../drizzle/schema";
 import type { ArticleInput } from "../shared/articles";
 import { getDb } from "./db";
@@ -74,6 +74,16 @@ export async function getPublishedArticleBySlug(slug: string): Promise<ArticleRe
     excerpt: rows[0].article.excerpt ?? "", tipTopic: rows[0].tipTopic, structured: meta.structured ?? null,
     sources: meta.sources ?? [], relatedTopics: meta.related_topics ?? [], coverImageVariants: meta.cover?.variants ?? {},
     coverImageSource: meta.cover?.source ?? null, coverImageIsAi: Boolean(meta.cover?.is_ai) } as ArticleRecord;
+}
+export async function getAgentArticleBySlug(slug: string): Promise<ArticleRecord | null> {
+  const db = requireDb(await getDb());
+  const rows = await db.select().from(articles).where(eq(articles.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+export async function getAgentArticleByTitle(title: string): Promise<ArticleRecord | null> {
+  const db = requireDb(await getDb());
+  const rows = await db.select().from(articles).where(ilike(articles.title, title)).orderBy(desc(articles.createdAt)).limit(1);
+  return rows[0] ?? null;
 }
 export async function getArticleByIdempotencyKey(key: string): Promise<ArticleRecord | null> { const db = requireDb(await getDb()); const rows = await db.select().from(articles).where(generationValue("agent_idempotency_key", key)).limit(1); return rows[0] ?? null; }
 export async function getArticleByTopicSlug(topicSlug: string): Promise<ArticleRecord | null> { const db = requireDb(await getDb()); const rows = await db.select().from(articles).where(generationValue("agent_topic_slug", topicSlug)).limit(1); return rows[0] ?? null; }
