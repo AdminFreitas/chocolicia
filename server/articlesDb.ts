@@ -43,9 +43,27 @@ export async function insertArticle(input: ArticleInput & { slug: string }, cove
     const [image] = await tx.insert(images).values({ fileUrl: cover.url, altText: input.coverImageAlt, imageType: "article-cover", sourceType: cover.isAi ? "generated" : "stock", generationMeta: { source: cover.source, variants: cover.variants }, active: true, createdAt: now, updatedAt: now }).returning();
     await tx.insert(articleImages).values({ articleId: row.id, imageId: image.id, imageUrl: cover.url, altText: input.coverImageAlt, imageRole: "cover", sortOrder: 0, createdAt: now });
     if (input.tags.length) {
-      const tagRows = await tx.select({ id: tags.id }).from(tags).where(or(...input.tags.map((value) => or(eq(tags.slug, value), eq(tags.name, value)))));
-      if (tagRows.length !== input.tags.length) throw new Error("Uma ou mais tags não foram encontradas");
-      await tx.insert(articleTags).values(tagRows.map((tag) => ({ articleId: row.id, tagId: tag.id, createdAt: now })));
+      // Serializa a resolução/criação para evitar duplicatas entre requisições concorrentes.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(734921, 1)`);
+      const resolvedTagIds: number[] = [];
+      for (const rawTag of input.tags) {
+        const name = rawTag.trim();
+        const slug = name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
+          .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 120);
+        if (!slug) continue;
+        const existing = await tx.select({ id: tags.id }).from(tags)
+          .where(or(eq(tags.slug, slug), eq(tags.name, name))).orderBy(tags.id).limit(1);
+        if (existing[0]) {
+          resolvedTagIds.push(existing[0].id);
+          continue;
+        }
+        const [created] = await tx.insert(tags).values({ name, slug }).returning({ id: tags.id });
+        resolvedTagIds.push(created.id);
+      }
+      const uniqueTagIds = [...new Set(resolvedTagIds)];
+      if (uniqueTagIds.length) {
+        await tx.insert(articleTags).values(uniqueTagIds.map((tagId) => ({ articleId: row.id, tagId, createdAt: now })));
+      }
     }
     return row;
   });
