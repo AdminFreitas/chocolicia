@@ -29,6 +29,6 @@ Production's `tip_topics` was reported empty; Preview has six rows. No topic see
 
 - Review the Drizzle schema against the current full PostgreSQL catalog and run the repository's type-check/build/CI.
 - Reconcile the existing open content/API PRs before merging: some still reference the removed `articles` tables or an alternate editorial schema.
-- Apply the Preview-only SQL manually and verify columns/index definitions read-only.
+- Apply migration `0003_tips_agent_idempotency` to Preview through the repository migration process only after verifying the target branch; then verify columns/index definitions read-only.
 - Populate approved topic reference data in Production through a separately reviewed data operation.
 - Update the Python agent/API contract in a separate task. This PR does not claim end-to-end generation or publication is working.
