@@ -5,6 +5,7 @@ import { appRouter } from "./routers";
 import { registerAuthRoutes } from "./_core/authRoutes";
 import { createContext } from "./_core/context";
 import { createRecipesRouter } from "./recipesRoutes";
+import { createArticlesReadRouter } from "./articlesReadRoutes";
 import { getPublishedRecipeBySlug } from "./recipeDb";
 import { renderRecipePageHtml } from "./recipePage";
 import { generateRecipesSitemap } from "./recipeSitemap";
@@ -51,6 +52,7 @@ export async function createApp(): Promise<Express> {
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
 
+  app.use("/api/articles", createArticlesReadRouter());
   app.use("/api/recipes", createRecipesRouter());
   app.use(
     "/api/trpc",
