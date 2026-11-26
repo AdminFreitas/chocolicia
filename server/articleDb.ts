@@ -23,7 +23,7 @@ import { getDb } from "./db";
 export type ArticleDb = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
 export type TipTopicSummary = {
-  id: string;
+  id: number;
   slug: string;
   name: string;
   description: string | null;

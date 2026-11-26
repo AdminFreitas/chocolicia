@@ -127,10 +127,10 @@ export const recipes = pgTable(
 export const categories = pgTable(
   "categories",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: serial("id").primaryKey(),
     name: varchar("name").notNull(),
     slug: varchar("slug").notNull(),
-    parentId: uuid("parent_id"),
+    parentId: integer("parent_id"),
     active: boolean("active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -159,7 +159,7 @@ export const categories = pgTable(
 export const tipTopics = pgTable(
   "tip_topics",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: serial("id").primaryKey(),
     name: varchar("name").notNull(),
     slug: varchar("slug").notNull(),
     description: text("description"),
@@ -188,8 +188,8 @@ export const articles = pgTable(
     content: text("content").default("").notNull(),
     articleType: varchar("article_type").default("materia").notNull(),
     status: varchar("status").default("draft").notNull(),
-    categoryId: uuid("category_id"),
-    topicId: uuid("topic_id"),
+    categoryId: integer("category_id"),
+    topicId: integer("topic_id"),
     coverImageUrl: text("cover_image_url"),
     coverImageAlt: varchar("cover_image_alt"),
     seoTitle: varchar("seo_title"),

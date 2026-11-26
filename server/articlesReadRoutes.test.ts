@@ -10,7 +10,7 @@ import type {
   TipTopicSummary,
 } from "./articleDb";
 
-const topicId = "00000000-0000-4000-8000-000000000001";
+const topicId = 1;
 const articleId = "00000000-0000-4000-8000-000000000002";
 const publishedAt = new Date("2026-11-20T12:00:00.000Z");
 

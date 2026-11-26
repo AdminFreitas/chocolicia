@@ -185,10 +185,10 @@ var recipes = pgTable(
 var categories = pgTable(
   "categories",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: serial("id").primaryKey(),
     name: varchar("name").notNull(),
     slug: varchar("slug").notNull(),
-    parentId: uuid("parent_id"),
+    parentId: integer("parent_id"),
     active: boolean("active").default(true).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -212,7 +212,7 @@ var categories = pgTable(
 var tipTopics = pgTable(
   "tip_topics",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: serial("id").primaryKey(),
     name: varchar("name").notNull(),
     slug: varchar("slug").notNull(),
     description: text("description"),
@@ -236,8 +236,8 @@ var articles = pgTable(
     content: text("content").default("").notNull(),
     articleType: varchar("article_type").default("materia").notNull(),
     status: varchar("status").default("draft").notNull(),
-    categoryId: uuid("category_id"),
-    topicId: uuid("topic_id"),
+    categoryId: integer("category_id"),
+    topicId: integer("topic_id"),
     coverImageUrl: text("cover_image_url"),
     coverImageAlt: varchar("cover_image_alt"),
     seoTitle: varchar("seo_title"),
@@ -336,7 +336,7 @@ var ENV = {
 var _sql = null;
 var _db = null;
 function resolveDatabaseUrl() {
-  return ENV.neonDatabaseUrl || ENV.databaseUrl || void 0;
+  return ENV.databaseUrl || ENV.neonDatabaseUrl || void 0;
 }
 function buildPostgresOptions(connectionString) {
   const isNeon = connectionString.includes("neon.tech");
@@ -1225,6 +1225,7 @@ function createRecipesRouter() {
 // server/articlesRoutes.ts
 import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
 import express2 from "express";
+import { z as z6 } from "zod";
 
 // shared/articles.ts
 import { z as z5 } from "zod";
@@ -1242,18 +1243,21 @@ var articleImageInputSchema = z5.object({
   caption: z5.string().trim().max(5e3).nullable().optional(),
   position: z5.number().int().min(0).max(1e4).optional()
 });
+var slugSchema = z5.string().trim().min(1).max(180).regex(
+  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  "O slug deve usar apenas min\xFAsculas, n\xFAmeros e h\xEDfen simples."
+);
 var articleInputSchema = z5.object({
   title: z5.string().trim().min(1).max(500),
-  slug: z5.string().trim().min(1).max(180).regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    "O slug deve usar apenas min\xFAsculas, n\xFAmeros e h\xEDfen simples."
-  ),
+  slug: slugSchema,
   excerpt: z5.string().trim().max(1e4).nullable().optional(),
   content: z5.string().min(1).max(1e6),
   articleType: z5.enum(["dica", "tecnica", "materia"]),
   status: z5.enum(["draft", "published"]).default("draft"),
-  categoryId: z5.string().uuid().nullable().optional(),
-  topicId: z5.string().uuid().nullable().optional(),
+  categoryId: z5.number().int().positive().nullable().optional(),
+  topicId: z5.number().int().positive().nullable().optional(),
+  categorySlug: slugSchema.nullable().optional(),
+  topicSlug: slugSchema.nullable().optional(),
   coverImageUrl: httpUrlSchema.nullable().optional(),
   coverImageAlt: z5.string().trim().max(500).nullable().optional(),
   seoTitle: z5.string().trim().max(1e3).nullable().optional(),
@@ -1270,10 +1274,35 @@ var articleInputSchema = z5.object({
     }
   }),
   images: z5.array(articleImageInputSchema).max(100).default([])
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (value.categoryId && value.categorySlug) {
+    context.addIssue({
+      code: "custom",
+      path: ["categorySlug"],
+      message: "Envie categoryId ou categorySlug, n\xE3o ambos."
+    });
+  }
+  if (value.topicId && value.topicSlug) {
+    context.addIssue({
+      code: "custom",
+      path: ["topicSlug"],
+      message: "Envie topicId ou topicSlug, n\xE3o ambos."
+    });
+  }
+});
 
 // server/articleDb.ts
-import { eq as eq3 } from "drizzle-orm";
+import {
+  and as and2,
+  asc,
+  count,
+  desc as desc2,
+  eq as eq3,
+  inArray,
+  isNotNull as isNotNull2,
+  lt as lt2,
+  or as or2
+} from "drizzle-orm";
 var ArticleSlugConflictError = class extends Error {
   constructor() {
     super("J\xE1 existe um artigo com este slug.");
@@ -1288,9 +1317,236 @@ var ArticleReferenceError = class extends Error {
     this.code = code;
   }
 };
+var InvalidTipCursorError = class extends Error {
+  constructor() {
+    super("Cursor de dicas inv\xE1lido.");
+    this.name = "InvalidTipCursorError";
+  }
+};
 function requireDb2(db) {
   if (!db) throw new Error("A base de dados n\xE3o est\xE1 configurada.");
   return db;
+}
+var TIP_TYPES = ["dica", "tecnica"];
+var UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function decodeTipCursor(value) {
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8")
+    );
+    if (typeof parsed.publishedAt !== "string" || typeof parsed.id !== "string" || !UUID_PATTERN.test(parsed.id)) {
+      throw new InvalidTipCursorError();
+    }
+    const publishedAt = new Date(parsed.publishedAt);
+    if (Number.isNaN(publishedAt.getTime())) {
+      throw new InvalidTipCursorError();
+    }
+    return { publishedAt, id: parsed.id };
+  } catch (error) {
+    if (error instanceof InvalidTipCursorError) throw error;
+    throw new InvalidTipCursorError();
+  }
+}
+function encodeTipCursor(article) {
+  return Buffer.from(
+    JSON.stringify({
+      publishedAt: article.publishedAt.toISOString(),
+      id: article.id
+    }),
+    "utf8"
+  ).toString("base64url");
+}
+function publishedTipFilters() {
+  return [
+    eq3(tipTopics.active, true),
+    inArray(articles.articleType, [...TIP_TYPES]),
+    eq3(articles.status, "published"),
+    isNotNull2(articles.publishedAt)
+  ];
+}
+async function listActiveTipTopics(dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const rows = await db.select({
+    id: tipTopics.id,
+    slug: tipTopics.slug,
+    name: tipTopics.name,
+    description: tipTopics.description,
+    articleCount: count(articles.id)
+  }).from(tipTopics).leftJoin(
+    articles,
+    and2(
+      eq3(articles.topicId, tipTopics.id),
+      inArray(articles.articleType, [...TIP_TYPES]),
+      eq3(articles.status, "published"),
+      isNotNull2(articles.publishedAt)
+    )
+  ).where(eq3(tipTopics.active, true)).groupBy(
+    tipTopics.id,
+    tipTopics.slug,
+    tipTopics.name,
+    tipTopics.description,
+    tipTopics.sortOrder
+  ).orderBy(asc(tipTopics.sortOrder), asc(tipTopics.name));
+  return rows.map((row) => ({
+    ...row,
+    articleCount: Number(row.articleCount)
+  }));
+}
+async function listPublishedTips(params, dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const filters = publishedTipFilters();
+  if (params.topic) {
+    filters.push(eq3(tipTopics.slug, params.topic));
+  }
+  if (params.cursor) {
+    const cursor = decodeTipCursor(params.cursor);
+    filters.push(
+      or2(
+        lt2(articles.publishedAt, cursor.publishedAt),
+        and2(
+          eq3(articles.publishedAt, cursor.publishedAt),
+          lt2(articles.id, cursor.id)
+        )
+      )
+    );
+  }
+  const rows = await db.select({
+    id: articles.id,
+    slug: articles.slug,
+    title: articles.title,
+    excerpt: articles.excerpt,
+    articleType: articles.articleType,
+    topicSlug: tipTopics.slug,
+    topicName: tipTopics.name,
+    coverImageUrl: articles.coverImageUrl,
+    coverImageAlt: articles.coverImageAlt,
+    publishedAt: articles.publishedAt,
+    updatedAt: articles.updatedAt
+  }).from(articles).innerJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(and2(...filters)).orderBy(desc2(articles.publishedAt), desc2(articles.id)).limit(params.limit + 1);
+  const hasMore = rows.length > params.limit;
+  const visibleRows = rows.slice(0, params.limit);
+  const articlesMissingCover = visibleRows.filter((row) => !row.coverImageUrl).map((row) => row.id);
+  const fallbackImages = /* @__PURE__ */ new Map();
+  if (articlesMissingCover.length > 0) {
+    const imageRows = await db.select({
+      articleId: articleImages.articleId,
+      imageUrl: articleImages.imageUrl,
+      altText: articleImages.altText
+    }).from(articleImages).where(inArray(articleImages.articleId, articlesMissingCover)).orderBy(asc(articleImages.position), asc(articleImages.createdAt));
+    for (const image of imageRows) {
+      if (!fallbackImages.has(image.articleId)) {
+        fallbackImages.set(image.articleId, {
+          imageUrl: image.imageUrl,
+          altText: image.altText
+        });
+      }
+    }
+  }
+  const items = visibleRows.map((row) => {
+    const fallback = fallbackImages.get(row.id);
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      excerpt: row.excerpt,
+      articleType: row.articleType,
+      topic: { slug: row.topicSlug, name: row.topicName },
+      coverImageUrl: row.coverImageUrl ?? fallback?.imageUrl ?? null,
+      coverImageAlt: row.coverImageAlt ?? fallback?.altText ?? null,
+      publishedAt: row.publishedAt,
+      updatedAt: row.updatedAt
+    };
+  });
+  const last = visibleRows[visibleRows.length - 1];
+  return {
+    items,
+    nextCursor: hasMore && last?.publishedAt ? encodeTipCursor({ id: last.id, publishedAt: last.publishedAt }) : null
+  };
+}
+function readSources(metadata) {
+  const value = metadata.sources;
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const source = item;
+    const name = typeof source.name === "string" ? source.name.trim() : "";
+    const title = typeof source.title === "string" ? source.title.trim() : "";
+    const url = typeof source.url === "string" ? source.url.trim() : "";
+    if (!name || !title || !url) return [];
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return [];
+    } catch {
+      return [];
+    }
+    return [{ name, title, url }];
+  });
+}
+async function getPublishedTipBySlug(slug, dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const rows = await db.select({
+    id: articles.id,
+    slug: articles.slug,
+    title: articles.title,
+    excerpt: articles.excerpt,
+    articleType: articles.articleType,
+    content: articles.content,
+    topicSlug: tipTopics.slug,
+    topicName: tipTopics.name,
+    coverImageUrl: articles.coverImageUrl,
+    coverImageAlt: articles.coverImageAlt,
+    publishedAt: articles.publishedAt,
+    updatedAt: articles.updatedAt,
+    author: articles.author,
+    seoTitle: articles.seoTitle,
+    seoDescription: articles.seoDescription,
+    generationMeta: articles.generationMeta
+  }).from(articles).innerJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(
+    and2(
+      eq3(articles.slug, slug),
+      eq3(tipTopics.active, true),
+      inArray(articles.articleType, [...TIP_TYPES]),
+      eq3(articles.status, "published"),
+      isNotNull2(articles.publishedAt)
+    )
+  ).limit(1);
+  const row = rows[0];
+  if (!row || !row.publishedAt) return null;
+  const [imageRows, tagRows] = await Promise.all([
+    db.select({
+      imageUrl: articleImages.imageUrl,
+      altText: articleImages.altText,
+      caption: articleImages.caption,
+      position: articleImages.position
+    }).from(articleImages).where(eq3(articleImages.articleId, row.id)).orderBy(asc(articleImages.position)),
+    db.select({ tag: articleTags.tag }).from(articleTags).where(eq3(articleTags.articleId, row.id)).orderBy(asc(articleTags.tag))
+  ]);
+  const images = imageRows.map((image) => ({
+    imageUrl: image.imageUrl,
+    altText: image.altText,
+    caption: image.caption,
+    position: image.position
+  }));
+  const metadata = row.generationMeta && typeof row.generationMeta === "object" ? row.generationMeta : {};
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    articleType: row.articleType,
+    topic: { slug: row.topicSlug, name: row.topicName },
+    coverImageUrl: row.coverImageUrl ?? images[0]?.imageUrl ?? null,
+    coverImageAlt: row.coverImageAlt ?? images[0]?.altText ?? null,
+    publishedAt: row.publishedAt,
+    updatedAt: row.updatedAt,
+    content: row.content,
+    author: row.author,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    tags: tagRows.map((item) => item.tag),
+    images,
+    sources: readSources(metadata)
+  };
 }
 async function createArticle(input, dbOverride) {
   const db = requireDb2(dbOverride ?? await getDb());
@@ -1298,6 +1554,16 @@ async function createArticle(input, dbOverride) {
     const [existing] = await tx.select({ id: articles.id }).from(articles).where(eq3(articles.slug, input.slug)).limit(1);
     if (existing) throw new ArticleSlugConflictError();
     let categoryId = input.categoryId ?? null;
+    if (!categoryId && input.categorySlug) {
+      const [bySlug] = await tx.select({ id: categories.id }).from(categories).where(eq3(categories.slug, input.categorySlug)).limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "A categoria indicada n\xE3o existe.",
+          "category_not_found"
+        );
+      }
+      categoryId = bySlug.id;
+    }
     if (categoryId) {
       const [category] = await tx.select({ id: categories.id, parentId: categories.parentId }).from(categories).where(eq3(categories.id, categoryId)).limit(1);
       if (!category) {
@@ -1322,7 +1588,17 @@ async function createArticle(input, dbOverride) {
         }
       }
     }
-    const topicId = input.topicId ?? null;
+    let topicId = input.topicId ?? null;
+    if (!topicId && input.topicSlug) {
+      const [bySlug] = await tx.select({ id: tipTopics.id }).from(tipTopics).where(eq3(tipTopics.slug, input.topicSlug)).limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "O t\xF3pico indicado n\xE3o existe.",
+          "topic_not_found"
+        );
+      }
+      topicId = bySlug.id;
+    }
     if (topicId) {
       const [topic] = await tx.select({ id: tipTopics.id }).from(tipTopics).where(eq3(tipTopics.id, topicId)).limit(1);
       if (!topic) {
@@ -1375,6 +1651,12 @@ async function createArticle(input, dbOverride) {
 
 // server/articlesRoutes.ts
 var MAX_BODY_BYTES = 1e6;
+var SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+var tipsQuerySchema = z6.object({
+  topic: z6.string().trim().min(1).max(180).regex(SLUG_PATTERN).optional(),
+  limit: z6.coerce.number().int().min(1).max(24).default(12),
+  cursor: z6.string().trim().min(1).max(512).optional()
+}).strict();
 function timingSafeTokenEquals2(received, expected) {
   const receivedDigest = createHash2("sha256").update(received).digest();
   const expectedDigest = createHash2("sha256").update(expected).digest();
@@ -1385,13 +1667,111 @@ function readBearer2(req) {
   return value.startsWith("Bearer ") ? value.slice(7).trim() : "";
 }
 function isSlugUniqueViolation(error) {
-  const dbError = error;
-  return dbError?.code === "23505" && dbError?.constraint === "articles_slug_key";
+  let current = error;
+  for (let depth = 0; current && depth < 5; depth += 1) {
+    const dbError = current;
+    const constraint = dbError.constraint_name ?? dbError.constraint;
+    if (dbError.code === "23505" && constraint === "articles_slug_key") {
+      return true;
+    }
+    current = dbError.cause;
+  }
+  return false;
+}
+function logPublicReadError(label, error) {
+  console.error(
+    "[Articles] " + label + " failed:",
+    error instanceof Error ? error.name : "UnknownError"
+  );
 }
 function createArticlesRouter(options = {}) {
   const router2 = express2.Router();
   const getToken = options.getToken ?? (() => process.env.RECIPES_AGENT_TOKEN);
   const create = options.createArticle ?? createArticle;
+  const listTopics = options.listTipTopics ?? listActiveTipTopics;
+  const listTips = options.listTips ?? listPublishedTips;
+  const getTip = options.getTip ?? getPublishedTipBySlug;
+  router2.get("/topics", async (_req, res) => {
+    try {
+      const items = await listTopics();
+      res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+      res.json({ items });
+    } catch (error) {
+      logPublicReadError("topics read", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar os assuntos das dicas."
+        }
+      });
+    }
+  });
+  router2.get("/", async (req, res) => {
+    const parsed = tipsQuerySchema.safeParse({
+      topic: req.query.topic,
+      limit: req.query.limit ?? 12,
+      cursor: req.query.cursor
+    });
+    if (!parsed.success) {
+      res.status(400).json({
+        error: {
+          code: "invalid_query",
+          message: "Os filtros de dicas s\xE3o inv\xE1lidos."
+        }
+      });
+      return;
+    }
+    try {
+      const page = await listTips(parsed.data);
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json(page);
+    } catch (error) {
+      if (error instanceof InvalidTipCursorError) {
+        res.status(400).json({
+          error: {
+            code: "invalid_cursor",
+            message: "O cursor de pagina\xE7\xE3o \xE9 inv\xE1lido."
+          }
+        });
+        return;
+      }
+      logPublicReadError("public list", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar as dicas."
+        }
+      });
+    }
+  });
+  router2.get("/:slug", async (req, res) => {
+    const slug = String(req.params.slug);
+    if (!SLUG_PATTERN.test(slug)) {
+      res.status(404).json({
+        error: { code: "not_found", message: "Dica n\xE3o encontrada." }
+      });
+      return;
+    }
+    try {
+      const article = await getTip(slug);
+      if (!article) {
+        res.status(404).json({
+          error: { code: "not_found", message: "Dica n\xE3o encontrada." }
+        });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json(article);
+    } catch (error) {
+      logPublicReadError("public detail", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar esta dica."
+        }
+      });
+    }
+  });
   router2.post("/", async (req, res) => {
     const expected = getToken();
     if (!expected) {

@@ -11,10 +11,10 @@ import {
 import { articleInputSchema } from "../shared/articles";
 import { createArticle, type ArticleDb } from "./articleDb";
 
-const categoryId = "00000000-0000-4000-8000-000000000001";
-const parentId = "00000000-0000-4000-8000-000000000002";
-const rootId = "00000000-0000-4000-8000-000000000003";
-const topicId = "00000000-0000-4000-8000-000000000004";
+const categoryId = 1;
+const parentId = 2;
+const rootId = 3;
+const topicId = 4;
 const articleId = "00000000-0000-4000-8000-000000000005";
 
 function input(overrides: Record<string, unknown> = {}) {
