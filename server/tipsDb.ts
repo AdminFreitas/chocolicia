@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { authors, images, tags, tipImages, tipTags, tipTopics, tips } from "../drizzle/schema";
 import type { TipInput } from "../shared/tips";
 import { getDb } from "./db";
@@ -66,7 +66,9 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
 
   const now = new Date();
   const publishedAt = input.status === "published" ? (input.publishedAt ?? now) : null;
-  const result = await db.transaction(async (tx) => {
+  let result: typeof tips.$inferSelect;
+  try {
+    result = await db.transaction(async (tx) => {
     const [tip] = await tx.insert(tips).values({
       slug: input.slug,
       title: input.title,
@@ -106,6 +108,42 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
       await tx.insert(tipTags).values(tagRows.map((tag) => ({ tipId: tip.id, tagId: tag.id })));
     }
     return tip;
-  });
+    });
+  } catch (error) {
+    const dbError = error as { code?: string };
+    if (dbError.code === "23505") {
+      const raced = await existingByAgentKeys(db, input);
+      if (raced) return { tip: validateExisting(raced, input), created: false };
+    }
+    throw error;
+  }
   return { tip: result, created: true };
+}
+
+export async function listPublishedTips(limit = 20) {
+  const db = await getDb();
+  if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
+  return db.select({
+    tip: tips,
+    topicName: tipTopics.name,
+    topicSlug: tipTopics.slug,
+  }).from(tips)
+    .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
+    .where(and(eq(tips.status, "published"), isNotNull(tips.publishedAt)))
+    .orderBy(desc(tips.publishedAt), desc(tips.id))
+    .limit(Math.min(Math.max(limit, 1), 50));
+}
+
+export async function getPublishedTipBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
+  const rows = await db.select({
+    tip: tips,
+    topicName: tipTopics.name,
+    topicSlug: tipTopics.slug,
+  }).from(tips)
+    .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
+    .where(and(eq(tips.slug, slug), eq(tips.status, "published"), isNotNull(tips.publishedAt)))
+    .limit(1);
+  return rows[0] ?? null;
 }
