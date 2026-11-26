@@ -6,14 +6,14 @@ ALTER TABLE public.tips
   ADD COLUMN IF NOT EXISTS agent_idempotency_key varchar(128),
   ADD COLUMN IF NOT EXISTS agent_topic_slug varchar(180),
   ADD COLUMN IF NOT EXISTS agent_request_hash varchar(64);
-
+--> statement-breakpoint
 UPDATE public.tips
 SET
   agent_idempotency_key = COALESCE(agent_idempotency_key, generation_meta ->> 'agent_idempotency_key'),
   agent_topic_slug = COALESCE(agent_topic_slug, generation_meta ->> 'agent_topic_slug'),
   agent_request_hash = COALESCE(agent_request_hash, generation_meta ->> 'agent_request_hash')
 WHERE generation_meta IS NOT NULL;
-
+--> statement-breakpoint
 DO $migration$
 DECLARE
   existing_definition text;
@@ -36,10 +36,10 @@ BEGIN
     EXECUTE 'DROP INDEX public.tips_agent_idempotency_key_uidx';
   END IF;
 END $migration$;
-
+--> statement-breakpoint
 -- This key is not globally unique; remove the former unique index if present.
 DROP INDEX IF EXISTS public.tips_agent_topic_slug_uidx;
-
+--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS tips_agent_idempotency_key_uidx
   ON public.tips (agent_idempotency_key);
 --> statement-breakpoint
