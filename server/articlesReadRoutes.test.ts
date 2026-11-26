@@ -121,6 +121,22 @@ describe("API pública de dicas", () => {
     });
   });
 
+  it("retorna uma página vazia quando não há dicas publicadas", async () => {
+    listMock.mockResolvedValueOnce({ items: [], nextCursor: null });
+    const response = await get("/api/articles?limit=9");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ items: [], nextCursor: null });
+  });
+
+  it("retorna 503 quando a consulta pública da lista falha", async () => {
+    listMock.mockRejectedValueOnce(new Error("database offline"));
+    const response = await get("/api/articles?limit=9");
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      error: { code: "server_error" },
+    });
+  });
+
   it("rejeita parâmetros inválidos sem consultar o banco", async () => {
     const response = await get("/api/articles?limit=100");
     expect(response.status).toBe(400);
