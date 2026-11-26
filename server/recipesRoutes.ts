@@ -185,8 +185,8 @@ export function createRecipesRouter() {
     try {
       const existing = await findRecipeByAgentKeys(clean);
       if (existing) {
-        if (existing.agentRequestHash && existing.agentRequestHash !== requestHash) {
-          res.status(409).json({ error: "A chave de idempotência já foi usada com outro conteúdo.", code: "idempotency_payload_conflict" });
+        if (existing.agentRequestHash !== requestHash) {
+          res.status(409).json({ error: "A chave de idempotência já foi usada com outro conteúdo ou não possui hash verificável.", code: "idempotency_payload_conflict" });
           return;
         }
         res.setHeader("Idempotent-Replay", "true");
