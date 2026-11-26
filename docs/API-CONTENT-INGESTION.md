@@ -41,7 +41,7 @@ Payload mínimo:
 
 Campos opcionais incluem `slug`, `excerpt`, `tipType`, `authorId`, `coverImageUrl`, `coverImageAlt`, `metaTitle`, `metaDescription`, `canonicalUrl`, `tags`, `images`, `status`, `reviewStatus`, `publishedAt` e `generationMeta`. CamelCase e aliases snake_case estão normalizados.
 
-`topicSlug` é obrigatório e representa exclusivamente a categoria de referência; é resolvido em `tip_topics` e deve estar ativo. `agentTopicSlug` não substitui `topicSlug` nem é chave de idempotência. `agentIdempotencyKey` é obrigatório e único por solicitação. Se não existir, a API retorna HTTP 422 com código `topic_not_found`; nenhum tópico é criado automaticamente.
+`topicSlug` é obrigatório e representa exclusivamente a categoria de referência; é resolvido em `tip_topics` e deve estar ativo. `agentTopicSlug` não substitui `topicSlug` nem é chave de idempotência. `agentIdempotencyKey` é obrigatório e único por solicitação; sua ausência torna o payload inválido (HTTP 400). Se `topicSlug` não corresponder a um tópico ativo, a API retorna HTTP 422 com código `topic_not_found`. Nenhum tópico é criado automaticamente.
 
 Tags são slugs de registros existentes em `tags`. Imagens podem referenciar `imageId` existente em `images` ou fornecer `imageUrl`; relações são persistidas em `tip_tags` e `tip_images`. Referências inexistentes retornam HTTP 422.
 
