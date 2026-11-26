@@ -6,7 +6,14 @@ ALTER TABLE public.tips
   ADD COLUMN IF NOT EXISTS agent_topic_slug varchar,
   ADD COLUMN IF NOT EXISTS agent_request_hash varchar;
 
-DO $$
+UPDATE public.tips
+SET
+  agent_idempotency_key = COALESCE(agent_idempotency_key, generation_meta ->> 'agent_idempotency_key'),
+  agent_topic_slug = COALESCE(agent_topic_slug, generation_meta ->> 'agent_topic_slug'),
+  agent_request_hash = COALESCE(agent_request_hash, generation_meta ->> 'agent_request_hash')
+WHERE generation_meta IS NOT NULL;
+
+DO $
 DECLARE
   existing_definition text;
 BEGIN
