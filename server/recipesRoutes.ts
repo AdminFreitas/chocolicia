@@ -188,18 +188,20 @@ export function createRecipesRouter() {
           res.status(409).json({ error: "A chave de idempotência já foi usada com outro conteúdo.", code: "idempotency_payload_conflict" });
           return;
         }
-        res.status(200).json({ recipe: existing, idempotent: true });
+        res.setHeader("Idempotent-Replay", "true");
+        res.status(200).json(existing);
         return;
       }
       const recipe = await insertRecipe({ ...clean, slug });
-      res.status(201).json({ recipe, idempotent: false });
+      res.status(201).json(recipe);
     } catch (error) {
       const dbError = error as { code?: string };
       if (dbError.code === "23505") {
         try {
           const existing = await findRecipeByAgentKeys(clean);
           if (existing && existing.agentRequestHash === requestHash) {
-            res.status(200).json({ recipe: existing, idempotent: true });
+            res.setHeader("Idempotent-Replay", "true");
+            res.status(200).json(existing);
             return;
           }
         } catch (lookupError) {
