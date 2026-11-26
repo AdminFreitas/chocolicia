@@ -56,7 +56,7 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
     throw new TipPersistenceError("tag_not_found", `Tags não cadastradas: ${missingTags.join(", ")}. Cadastre-as antes de enviar a dica.`, 422);
   }
 
-  const imageIds = [...new Set(input.images.flatMap((image) => image.imageId ? [image.imageId] : []))];
+  const imageIds = Array.from(new Set(input.images.flatMap((image) => image.imageId ? [image.imageId] : [])));
   if (imageIds.length) {
     const foundImages = await db.select({ id: images.id }).from(images).where(inArray(images.id, imageIds));
     const foundIds = new Set(foundImages.map((image) => image.id));
