@@ -3,7 +3,7 @@ import express, { type Request, type Response } from "express";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
 import { findRecipeByAgentKeys, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
-import { hasMatchingRecipeRequestHash } from "./recipeIdempotency";
+import { hasMatchingRecipeRequestHash, hasRecipeIdempotencyKey } from "./recipeIdempotency";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
 
