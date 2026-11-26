@@ -60,7 +60,6 @@ export const tipInputSchema = z.preprocess((value) => {
     if (input[camel] === undefined && input[snake] !== undefined) input[camel] = input[snake];
     delete input[snake];
   }
-  if (input.topicSlug === undefined && typeof input.agentTopicSlug === "string") input.topicSlug = input.agentTopicSlug;
   if (Array.isArray(input.images)) {
     input.images = input.images.map((entry) => {
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
@@ -73,8 +72,8 @@ export const tipInputSchema = z.preprocess((value) => {
     });
   }
   return input;
-}, tipInputBaseSchema).refine((input) => Boolean(input.agentIdempotencyKey || input.agentTopicSlug), {
-  message: "Informe agentIdempotencyKey ou agentTopicSlug para garantir idempotência.",
+}, tipInputBaseSchema).refine((input) => Boolean(input.agentIdempotencyKey), {
+  message: "Informe agentIdempotencyKey único para cada solicitação.",
   path: ["agentIdempotencyKey"],
 });
 

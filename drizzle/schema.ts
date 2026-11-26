@@ -197,7 +197,6 @@ export const tips = pgTable("tips", {
 }, (table) => [
   uniqueIndex("tips_slug_key").on(table.slug),
   uniqueIndex("tips_agent_idempotency_key_uidx").on(table.agentIdempotencyKey),
-  uniqueIndex("tips_agent_topic_slug_uidx").on(table.agentTopicSlug),
   index("tips_author_id_idx").on(table.authorId),
   index("tips_review_status_idx").on(table.reviewStatus),
   index("tips_status_published_at_idx").on(table.status, table.publishedAt.desc()),

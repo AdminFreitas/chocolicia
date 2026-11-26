@@ -29,11 +29,22 @@ describe("tipInputSchema", () => {
     expect(parsed.success).toBe(false);
   });
 
-  it("requires at least one idempotency identifier", () => {
+  it("requires agentIdempotencyKey; agentTopicSlug alone is not a request key", () => {
     const parsed = tipInputSchema.safeParse({
       title: validTip.title,
       content: validTip.content,
       topicSlug: validTip.topicSlug,
+      agentTopicSlug: "publication-abc",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("does not use agentTopicSlug as the category", () => {
+    const parsed = tipInputSchema.safeParse({
+      title: validTip.title,
+      content: validTip.content,
+      agentIdempotencyKey: validTip.agentIdempotencyKey,
+      agentTopicSlug: "publication-abc",
     });
     expect(parsed.success).toBe(false);
   });

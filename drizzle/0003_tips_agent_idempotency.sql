@@ -1,10 +1,11 @@
--- Idempotent schema alignment for the existing tips table.
--- No table recreation and no row deletion. Safe when columns/indexes already exist.
+-- Idempotent alignment for tips idempotency fields.
+-- topicSlug/topic_id remains the category; agentTopicSlug is publication metadata.
+-- No table recreation and no row deletion.
 
 ALTER TABLE public.tips
-  ADD COLUMN IF NOT EXISTS agent_idempotency_key varchar,
-  ADD COLUMN IF NOT EXISTS agent_topic_slug varchar,
-  ADD COLUMN IF NOT EXISTS agent_request_hash varchar;
+  ADD COLUMN IF NOT EXISTS agent_idempotency_key varchar(128),
+  ADD COLUMN IF NOT EXISTS agent_topic_slug varchar(180),
+  ADD COLUMN IF NOT EXISTS agent_request_hash varchar(64);
 
 UPDATE public.tips
 SET
@@ -25,22 +26,13 @@ BEGIN
      AND existing_definition NOT LIKE '%(agent_idempotency_key)%' THEN
     EXECUTE 'DROP INDEX public.tips_agent_idempotency_key_uidx';
   END IF;
-
-  SELECT indexdef INTO existing_definition
-  FROM pg_indexes
-  WHERE schemaname = 'public'
-    AND indexname = 'tips_agent_topic_slug_uidx';
-  IF existing_definition IS NOT NULL
-     AND existing_definition NOT LIKE '%(agent_topic_slug)%' THEN
-    EXECUTE 'DROP INDEX public.tips_agent_topic_slug_uidx';
-  END IF;
 END $migration$;
+
+-- This key is not globally unique; remove the former unique index if present.
+DROP INDEX IF EXISTS public.tips_agent_topic_slug_uidx;
 
 CREATE UNIQUE INDEX IF NOT EXISTS tips_agent_idempotency_key_uidx
   ON public.tips (agent_idempotency_key);
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS tips_agent_topic_slug_uidx
-  ON public.tips (agent_topic_slug);
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS tips_review_status_idx
   ON public.tips (review_status);

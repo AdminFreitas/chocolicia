@@ -13,7 +13,6 @@ export class TipPersistenceError extends Error {
 async function existingByAgentKeys(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, input: TipInput) {
   const predicates = [];
   if (input.agentIdempotencyKey) predicates.push(eq(tips.agentIdempotencyKey, input.agentIdempotencyKey));
-  if (input.agentTopicSlug) predicates.push(eq(tips.agentTopicSlug, input.agentTopicSlug));
   if (!predicates.length) return null;
   const rows = await db.select().from(tips).where(or(...predicates)).limit(2);
   if (rows.length > 1) {
@@ -23,7 +22,7 @@ async function existingByAgentKeys(db: NonNullable<Awaited<ReturnType<typeof get
 }
 
 function validateExisting(existing: typeof tips.$inferSelect, input: TipInput) {
-  if (input.agentRequestHash && existing.agentRequestHash && input.agentRequestHash !== existing.agentRequestHash) {
+  if (existing.agentRequestHash !== input.agentRequestHash) {
     throw new TipPersistenceError("idempotency_payload_conflict", "A chave de idempotência já foi usada com outro conteúdo.", 409);
   }
   return existing;
@@ -149,7 +148,7 @@ export async function listPublishedTips(limit = 20) {
     topicSlug: tipTopics.slug,
   }).from(tips)
     .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
-    .where(and(eq(tips.status, "published"), isNotNull(tips.publishedAt)))
+    .where(and(eq(tips.status, "published"), eq(tips.reviewStatus, "approved"), isNotNull(tips.publishedAt)))
     .orderBy(desc(tips.publishedAt), desc(tips.id))
     .limit(Math.min(Math.max(limit, 1), 50));
 }
@@ -163,7 +162,7 @@ export async function getPublishedTipBySlug(slug: string) {
     topicSlug: tipTopics.slug,
   }).from(tips)
     .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
-    .where(and(eq(tips.slug, slug), eq(tips.status, "published"), isNotNull(tips.publishedAt)))
+    .where(and(eq(tips.slug, slug), eq(tips.status, "published"), eq(tips.reviewStatus, "approved"), isNotNull(tips.publishedAt)))
     .limit(1);
   const row = rows[0];
   if (!row) return null;

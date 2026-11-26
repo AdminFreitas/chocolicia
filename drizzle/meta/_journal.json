@@ -29,6 +29,13 @@
       "when": 1795730000000,
       "tag": "0003_tips_agent_idempotency",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795730001000,
+      "tag": "0004_recipes_agent_idempotency",
+      "breakpoints": true
     }
   ]
 }
