@@ -2,6 +2,8 @@
 
 Site institucional da Chocolícia: página inicial, promoção sazonal, blog de receitas, páginas de serviços, orçamento, galeria administrável e integração com o agente de receitas. O projeto usa React, Vite, Tailwind CSS 4, Express, tRPC, Drizzle ORM, PostgreSQL/Neon e Vercel Functions.
 
+O contrato educativo V1 é `POST /api/tips`, com tipos `dica`, `tecnica` e `materia`; o modelo legado `articles` não é usado pelo fluxo atual.
+
 ## Requisitos e execução local
 
 Requer Node.js 20 ou superior e pnpm 10.x. Instale as dependências com `pnpm install --frozen-lockfile`. Crie `.env` a partir do modelo `.env.example` e preencha apenas as credenciais necessárias ao serviço que pretende testar. O modelo contém nomes e finalidades, não credenciais.
