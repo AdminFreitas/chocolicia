@@ -7,6 +7,7 @@
     { "path": "/areas-atendidas", "title": "Áreas atendidas" },
     { "path": "/politicas-e-termos", "title": "Políticas e termos" },
     { "path": "/receitas", "title": "Receitas" },
+    { "path": "/dicas", "title": "Dicas" },
     { "path": "/promocao", "title": "Promoção de Natal" },
     { "path": "/promocoes", "title": "Promoção de Natal" },
     { "path": "/receitas/:slug", "title": "Receita" }

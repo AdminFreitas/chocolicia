@@ -7,12 +7,12 @@ type HeaderProps = { variant?: "home" | "recipes" };
 type FooterProps = { variant?: "home" | "recipes" };
 
 const homeNavigation: Array<[string, string]> = [
-  ["Início", "#inicio"], ["Promoção", "/promocao"], ["Receitas", "/receitas"],
+  ["Início", "#inicio"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Dicas", "/dicas"],
   ["Orçamento", "#orcamento"], ["Catálogo", "#catalogo"], ["Sobre", "#sobre"], ["FAQ", "#faq"],
 ];
 
 const pageNavigation: Array<[string, string]> = [
-  ["Início", "/"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Orçamento", "/#orcamento"],
+  ["Início", "/"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Dicas", "/dicas"], ["Orçamento", "/#orcamento"],
   ["Catálogo", "/#catalogo"], ["Sobre", "/#sobre"], ["FAQ", "/#faq"],
 ];
 
@@ -49,7 +49,7 @@ export function SiteFooter({ variant = "home" }: FooterProps) {
       <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div><a href="/" className="font-display text-2xl text-[#FFF9F0]">Chocolícia</a><p className="mt-1 text-xs">Doces artesanais para celebrar com afeto.</p></div>
         <nav aria-label="Links do rodapé" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-          <a href="/receitas" className="hover:text-[#F3CD73]">Receitas</a><a href="/promocao" className="hover:text-[#F3CD73]">Promoção</a><a href="/buffet-para-festas" className="hover:text-[#F3CD73]">Buffet</a><a href="/bolos-personalizados" className="hover:text-[#F3CD73]">Bolos</a><a href="/politicas-e-termos" className="hover:text-[#F3CD73]">Privacidade</a>
+          <a href="/receitas" className="hover:text-[#F3CD73]">Receitas</a><a href="/dicas" className="hover:text-[#F3CD73]">Dicas</a><a href="/promocao" className="hover:text-[#F3CD73]">Promoção</a><a href="/buffet-para-festas" className="hover:text-[#F3CD73]">Buffet</a><a href="/bolos-personalizados" className="hover:text-[#F3CD73]">Bolos</a><a href="/politicas-e-termos" className="hover:text-[#F3CD73]">Privacidade</a>
         </nav><p className="text-xs">© {new Date().getFullYear()} {SITE.fullName}. {SITE.city}, {SITE.state}.</p>
       </div>
     </footer>;

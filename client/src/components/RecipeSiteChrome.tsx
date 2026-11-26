@@ -1,4 +1,4 @@
-import { BookOpen, House, MessageCircle } from "lucide-react";
+import { BookOpen, House, Lightbulb, MessageCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { WA_ORCAMENTO } from "@/config/site";
@@ -24,6 +24,7 @@ export default function RecipeSiteChrome({ children }: Props) {
         items={[
           { icon: <House size={18} aria-hidden="true" />, label: "Início", onClick: () => navigate("/") },
           { icon: <BookOpen size={18} aria-hidden="true" />, label: "Receitas", onClick: () => navigate("/receitas") },
+          { icon: <Lightbulb size={18} aria-hidden="true" />, label: "Dicas", onClick: () => navigate("/dicas") },
           { icon: <MessageCircle size={18} aria-hidden="true" />, label: "Contato", onClick: () => window.open(WA_ORCAMENTO, "_blank", "noopener,noreferrer") },
         ]}
         panelHeight={68}
