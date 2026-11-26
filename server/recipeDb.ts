@@ -121,14 +121,11 @@ export async function getAllPublishedRecipeTitles(dbOverride?: RecipeDb) {
     .orderBy(desc(recipes.publishedAt));
 }
 
-export async function findRecipeByAgentKeys(input: Pick<RecipeInput, "agentIdempotencyKey" | "agentTopicSlug">, dbOverride?: RecipeDb) {
+export async function findRecipeByAgentKeys(input: Pick<RecipeInput, "agentIdempotencyKey">, dbOverride?: RecipeDb) {
   const db = requireDb(dbOverride ?? await getDb());
-  const predicates = [];
-  if (input.agentIdempotencyKey) predicates.push(eq(recipes.agentIdempotencyKey, input.agentIdempotencyKey));
-  if (input.agentTopicSlug) predicates.push(eq(recipes.agentTopicSlug, input.agentTopicSlug));
-  if (!predicates.length) return null;
-  const rows = await db.select().from(recipes).where(or(...predicates)).limit(2);
-  if (rows.length > 1) throw new Error("Conflito: chave de idempotência e tópico apontam para receitas diferentes.");
+  if (!input.agentIdempotencyKey) return null;
+  const rows = await db.select().from(recipes)
+    .where(eq(recipes.agentIdempotencyKey, input.agentIdempotencyKey)).limit(1);
   return rows[0] ?? null;
 }
 
