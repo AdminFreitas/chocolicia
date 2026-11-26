@@ -158,7 +158,6 @@ export const recipes = pgTable("recipes", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("recipes_slug_uidx").on(table.slug),
-  uniqueIndex("recipes_agent_topic_slug_uidx").on(table.agentTopicSlug),
   uniqueIndex("recipes_agent_idempotency_key_uidx").on(table.agentIdempotencyKey),
   index("recipes_author_id_idx").on(table.authorId),
   index("recipes_category_idx").on(table.category),
