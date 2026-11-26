@@ -1,0 +1,39 @@
+-- Idempotent schema alignment for the existing tips table.
+-- No table recreation and no row deletion. Safe when columns/indexes already exist.
+
+ALTER TABLE public.tips
+  ADD COLUMN IF NOT EXISTS agent_idempotency_key varchar,
+  ADD COLUMN IF NOT EXISTS agent_topic_slug varchar,
+  ADD COLUMN IF NOT EXISTS agent_request_hash varchar;
+
+DO $$
+DECLARE
+  existing_definition text;
+BEGIN
+  SELECT indexdef INTO existing_definition
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND indexname = 'tips_agent_idempotency_key_uidx';
+  IF existing_definition IS NOT NULL
+     AND existing_definition NOT LIKE '%(agent_idempotency_key)%' THEN
+    DROP INDEX public.tips_agent_idempotency_key_uidx;
+  END IF;
+
+  SELECT indexdef INTO existing_definition
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND indexname = 'tips_agent_topic_slug_uidx';
+  IF existing_definition IS NOT NULL
+     AND existing_definition NOT LIKE '%(agent_topic_slug)%' THEN
+    DROP INDEX public.tips_agent_topic_slug_uidx;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS tips_agent_idempotency_key_uidx
+  ON public.tips (agent_idempotency_key);
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS tips_agent_topic_slug_uidx
+  ON public.tips (agent_topic_slug);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS tips_review_status_idx
+  ON public.tips (review_status);
