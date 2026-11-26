@@ -12,11 +12,9 @@ Autenticação: `Authorization: Bearer <RECIPES_AGENT_TOKEN>`
 
 O payload usa o schema `recipeInputSchema` em `shared/recipes.ts`: `title`, `excerpt`, `category`, `coverImageUrl`, `coverImageAlt`, `ingredients`, `steps`, `prepTimeMin`, `servings`, `difficulty` e os campos opcionais de imagem, tags, dicas, FAQ, SEO e metadados. Os nomes são camelCase; os aliases snake_case dos campos de agente são normalizados.
 
-Para idempotência, envie ao menos um:
-- `agentIdempotencyKey`: chave estável por solicitação.
-- `agentTopicSlug`: identificador opcional da publicação/pauta, independente da categoria; não substitui a chave de idempotência.
+Para idempotência, `agentIdempotencyKey` é obrigatório e deve ser estável por solicitação. `agentTopicSlug` é metadado opcional de pauta/publicação; não substitui a chave e não possui unicidade global.
 
-O backend calcula `agentRequestHash` a partir do payload normalizado, grava os três campos nas colunas físicas e usa os índices únicos. A migration `0004_recipes_agent_idempotency.sql` cria as colunas e índices físicos de `recipes`; não foi executada no Neon. Repetição com mesmo conteúdo retorna HTTP 200 e header `Idempotent-Replay: true`; criação nova retorna HTTP 201. Reutilização da chave com payload diferente retorna HTTP 409.
+O backend calcula `agentRequestHash` a partir do payload normalizado, grava os três campos nas colunas físicas e utiliza somente `agent_idempotency_key` como índice único de idempotência. A migration `0004_recipes_agent_idempotency.sql` cria as colunas e índices físicos de `recipes`; não foi executada no Neon. Repetição com mesmo conteúdo retorna HTTP 200 e header `Idempotent-Replay: true`; criação nova retorna HTTP 201. A chave ausente retorna HTTP 400; reutilização com payload diferente ou hash armazenado ausente/inverificável retorna HTTP 409.
 
 O status segue o schema de receitas (`draft` ou `published`). A publicação via endpoint exige o token do agente. O endpoint diário existente `POST/GET /api/recipes/generate-daily` permanece separado e usa `CRON_SECRET`.
 
