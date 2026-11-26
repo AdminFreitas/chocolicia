@@ -1,6 +1,6 @@
 // server/createApp.ts
 import "dotenv/config";
-import express2 from "express";
+import express3 from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // shared/const.ts
@@ -1055,6 +1055,88 @@ function createRecipesRouter() {
   return router2;
 }
 
+// server/articlesReadRoutes.ts
+import express2 from "express";
+
+// shared/tipTopics.ts
+var TIP_TOPICS = [
+  { slug: "montagem-e-apresentacao", name: "Montagem e apresenta\xE7\xE3o", riskLevel: "low", active: true, agentEnabled: true },
+  { slug: "ornamentacao", name: "Ornamenta\xE7\xE3o", riskLevel: "low", active: true, agentEnabled: true },
+  { slug: "preparo", name: "Preparo", riskLevel: "medium", active: true, agentEnabled: false },
+  { slug: "equipamentos-uso", name: "Uso de equipamentos", riskLevel: "medium", active: true, agentEnabled: false },
+  { slug: "equipamentos-compra", name: "Escolha de equipamentos", riskLevel: "medium", active: true, agentEnabled: false },
+  { slug: "negocios", name: "Neg\xF3cios na culin\xE1ria", riskLevel: "medium", active: true, agentEnabled: false }
+];
+
+// server/articlesReadDb.ts
+import { sql as sql2 } from "drizzle-orm";
+var ARTICLE_TYPES = ["article", "tip", "technique", "news"];
+async function listPublishedArticles(limit = 24, contentType) {
+  const db = await getDb();
+  if (!db) throw new Error("A base de dados n\xE3o est\xE1 configurada");
+  const typeFilter = contentType ? sql2`AND a.content_type = ${contentType}` : sql2``;
+  const result = await db.execute(sql2`
+    SELECT
+      a.id::text AS id,
+      a.content_type AS type,
+      a.status,
+      a.slug,
+      a.title,
+      a.excerpt,
+      t.slug AS "tipTopic",
+      a.cover_image_url AS "coverImageUrl",
+      a.cover_image_alt AS "coverImageAlt",
+      COALESCE(a.generation_meta->'cover'->'variants', '{}'::jsonb) AS "coverImageVariants",
+      a.published_at AS "publishedAt",
+      a.updated_at AS "updatedAt"
+    FROM articles AS a
+    LEFT JOIN tip_topics AS t ON t.id = a.topic_id
+    WHERE a.status = 'published'
+      AND a.published_at IS NOT NULL
+      ${typeFilter}
+    ORDER BY a.published_at DESC, a.id DESC
+    LIMIT ${limit}
+  `);
+  return Array.from(result);
+}
+function isArticleType(value) {
+  return ARTICLE_TYPES.includes(value);
+}
+
+// server/articlesReadRoutes.ts
+function parseLimit(value) {
+  if (value === void 0) return 24;
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return null;
+  const limit = Number(value);
+  return Number.isInteger(limit) && limit >= 1 && limit <= 24 ? limit : null;
+}
+function createArticlesReadRouter(options = {}) {
+  const router2 = express2.Router();
+  const loadArticles = options.listArticles ?? listPublishedArticles;
+  router2.get("/topics", (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.json({ items: TIP_TOPICS });
+  });
+  router2.get("/", async (req, res) => {
+    const limit = parseLimit(req.query.limit);
+    const typeValue = req.query.type;
+    if (limit === null || typeValue !== void 0 && (typeof typeValue !== "string" || !isArticleType(typeValue))) {
+      res.status(400).json({ error: { code: "invalid_query", message: "Par\xE2metros de consulta inv\xE1lidos." } });
+      return;
+    }
+    const type = typeof typeValue === "string" ? typeValue : void 0;
+    try {
+      const items = await loadArticles(limit, type);
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json({ items });
+    } catch (error) {
+      console.error("[Articles] list failed:", error instanceof Error ? error.name : "UnknownError");
+      res.status(503).json({ error: { code: "server_error", message: "N\xE3o foi poss\xEDvel carregar as dicas." } });
+    }
+  });
+  return router2;
+}
+
 // client/src/config/site.ts
 var SITE = {
   name: "Chocol\xEDcia \u2013 Arte dos Doces e Buffet",
@@ -1214,15 +1296,16 @@ async function serveSitemap(res) {
   }
 }
 async function createApp() {
-  const app = express2();
+  const app = express3();
   app.set("trust proxy", 1);
-  app.use(express2.json({ limit: "50mb" }));
-  app.use(express2.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express3.json({ limit: "50mb" }));
+  app.use(express3.urlencoded({ limit: "50mb", extended: true }));
   registerAuthRoutes(app);
   app.get("/api/recipe-page", (req, res, next) => serveRecipePage(String(req.query.slug ?? ""), res, next));
   app.get("/api/recipes-sitemap", (_req, res) => serveSitemap(res));
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
+  app.use("/api/articles", createArticlesReadRouter());
   app.use("/api/recipes", createRecipesRouter());
   app.use(
     "/api/trpc",

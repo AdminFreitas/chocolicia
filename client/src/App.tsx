@@ -16,6 +16,7 @@ const Legal = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Recipes = lazy(() => import("./pages/Recipes"));
 const RecipeDetail = lazy(() => import("./pages/RecipeDetail"));
+const Dicas = lazy(() => import("./pages/Dicas"));
 const Promotion = lazy(() => import("./pages/Promotion"));
 
 function LazyRoute({ children }: { children: ReactNode }) {
@@ -30,6 +31,10 @@ function RecipeDetailRoute() {
   return <Suspense fallback={<RecipeRouteFallback detail />}><RecipeDetail /></Suspense>;
 }
 
+function DicasRoute() {
+  return <Suspense fallback={<LegacyRouteFallback />}><Dicas /></Suspense>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -40,6 +45,7 @@ function Router() {
       <Route path="/areas-atendidas"><LazyRoute><AreasAtendidas /></LazyRoute></Route>
       <Route path="/politicas-e-termos"><LazyRoute><Legal /></LazyRoute></Route>
       <Route path="/receitas" component={RecipeListRoute} />
+      <Route path="/dicas" component={DicasRoute} />
       <Route path="/promocao"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/promocoes"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/receitas/:slug" component={RecipeDetailRoute} />
