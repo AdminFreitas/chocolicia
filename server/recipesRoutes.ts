@@ -172,7 +172,7 @@ export function createRecipesRouter() {
       res.status(400).json({ error: "A imagem precisa de um URL HTTP ou HTTPS." });
       return;
     }
-    if (!clean.agentIdempotencyKey) {
+    if (!hasRecipeIdempotencyKey(clean.agentIdempotencyKey)) {
       res.status(400).json({ error: "Informe agentIdempotencyKey para cada solicitação.", code: "idempotency_key_required" });
       return;
     }
