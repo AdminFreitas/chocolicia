@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request } from "express";
 import { tipInputSchema } from "../shared/tips";
-import { createTipIdempotently, TipPersistenceError } from "./tipsDb";
+import { createTipIdempotently, getPublishedTipBySlug, listPublishedTips, TipPersistenceError } from "./tipsDb";
 import { toSlug } from "./recipeDb";
 
 function tokenMatches(received: string, expected: string) {
@@ -35,6 +35,42 @@ function sanitizeDeep<T>(value: T): T {
 
 export function createTipsRouter() {
   const router = express.Router();
+
+  router.get("/", async (req, res) => {
+    const parsedLimit = Number(req.query.limit ?? 20);
+    if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 50) {
+      res.status(400).json({ error: "O parâmetro limit deve ser um inteiro entre 1 e 50.", code: "invalid_limit" });
+      return;
+    }
+    try {
+      const rows = await listPublishedTips(parsedLimit);
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json({ items: rows });
+    } catch (error) {
+      console.error("[Tips] list:", error);
+      res.status(503).json({ error: "Não foi possível carregar as dicas.", code: "tips_unavailable" });
+    }
+  });
+
+  router.get("/:slug", async (req, res) => {
+    const slug = String(req.params.slug);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      res.status(404).json({ error: "Dica não encontrada.", code: "tip_not_found" });
+      return;
+    }
+    try {
+      const tip = await getPublishedTipBySlug(slug);
+      if (!tip) {
+        res.status(404).json({ error: "Dica não encontrada.", code: "tip_not_found" });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json(tip);
+    } catch (error) {
+      console.error("[Tips] detail:", error);
+      res.status(503).json({ error: "Não foi possível carregar esta dica.", code: "tips_unavailable" });
+    }
+  });
 
   router.post("/", async (req, res) => {
     const expected = process.env.TIPS_AGENT_TOKEN;
