@@ -22,9 +22,6 @@
       "includeFiles": "dist/article-shell.html"
     }
   },
-  "crons": [
-    { "path": "/api/recipes/generate-daily", "schedule": "0 13 * * *" }
-  ],
   "rewrites": [
     { "source": "/receitas/:slug", "destination": "/api/recipe-page?slug=:slug" },
     { "source": "/dicas/:slug", "destination": "/api/article-page?slug=:slug" },
