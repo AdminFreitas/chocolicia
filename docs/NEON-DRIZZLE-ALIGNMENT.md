@@ -12,14 +12,14 @@ The Drizzle definitions in `drizzle/schema.ts` were aligned to the Production ta
 
 The read-only audit found that Preview still stores the two tips idempotency indexes as JSONB expression indexes and lacks the three physical idempotency columns and the `tips_review_status_idx` index.
 
-The manual SQL at `drizzle/manual/preview-sync-tips-idempotency.sql` is the narrowly scoped reconciliation for that existing Preview schema. It:
+The migration `drizzle/0003_tips_agent_idempotency.sql` is the narrowly scoped reconciliation for the existing schema. It:
 
 1. Adds the three physical columns if absent.
 2. Copies legacy values from `generation_meta` without overwriting existing column values.
 3. Replaces the two legacy JSONB indexes with unique indexes on the physical columns.
 4. Adds the review-status index.
 
-**This SQL has not been executed.** Apply it only to the identified Preview branch after verifying the connection target and checking for duplicate legacy keys. Do not use it as an automatic Production deployment migration.
+**No migration was executed against Neon by this work.** The migration uses `ADD COLUMN IF NOT EXISTS`, checks whether same-named indexes still point to JSONB expressions, and only replaces those indexes when necessary. It preserves table rows. Before running it in any environment, verify the connection target and check for duplicate legacy values that could violate uniqueness.
 
 ## Reference data
 
