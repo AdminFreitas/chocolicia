@@ -1,0 +1,41 @@
+name: Verificações do site Chocolícia
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - fix/articles-neon-integration
+
+permissions:
+  contents: read
+
+jobs:
+  check-test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript
+        run: pnpm check
+
+      - name: Testes
+        run: pnpm test
+
+      - name: Build de produção
+        run: pnpm build

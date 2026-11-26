@@ -15,6 +15,7 @@ const DocesParaFestas = lazy(() => import("./pages/DocesParaFestas"));
 const Legal = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Recipes = lazy(() => import("./pages/Recipes"));
+const Dicas = lazy(() => import("./pages/Dicas"));
 const RecipeDetail = lazy(() => import("./pages/RecipeDetail"));
 const Promotion = lazy(() => import("./pages/Promotion"));
 
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/areas-atendidas"><LazyRoute><AreasAtendidas /></LazyRoute></Route>
       <Route path="/politicas-e-termos"><LazyRoute><Legal /></LazyRoute></Route>
       <Route path="/receitas" component={RecipeListRoute} />
+      <Route path="/dicas"><LazyRoute><Dicas /></LazyRoute></Route>
       <Route path="/promocao"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/promocoes"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/receitas/:slug" component={RecipeDetailRoute} />

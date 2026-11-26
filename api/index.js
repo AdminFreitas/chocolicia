@@ -1,6 +1,6 @@
 // server/createApp.ts
 import "dotenv/config";
-import express2 from "express";
+import express3 from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // shared/const.ts
@@ -86,9 +86,30 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 // drizzle/schema.ts
-import { index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+  varchar
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 var userRole = pgEnum("user_role", ["user", "admin"]);
-var recipeStatus = pgEnum("recipe_status", ["draft", "published", "failed"]);
+var recipeStatus = pgEnum("recipe_status", [
+  "draft",
+  "published",
+  "failed"
+]);
 var users = pgTable("users", {
   id: serial("id").primaryKey(),
   openId: varchar("open_id", { length: 64 }).notNull().unique(),
@@ -120,40 +141,186 @@ var orders = pgTable("orders", {
   status: varchar("status", { length: 32 }).default("new").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
-var recipes = pgTable("recipes", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  slug: varchar("slug", { length: 180 }).notNull(),
-  title: varchar("title", { length: 180 }).notNull(),
-  excerpt: varchar("excerpt", { length: 160 }).notNull(),
-  category: varchar("category", { length: 80 }).notNull(),
-  subcategory: varchar("subcategory", { length: 120 }),
-  subcategorySlug: varchar("subcategory_slug", { length: 120 }),
-  tags: text("tags").array().notNull().default([]),
-  coverImageUrl: text("cover_image_url").notNull(),
-  coverImageAlt: varchar("cover_image_alt", { length: 240 }).notNull(),
-  imagePrompt: text("image_prompt").notNull().default(""),
-  coverImageVariants: jsonb("cover_image_variants").$type().notNull().default({}),
-  ingredients: jsonb("ingredients").$type().notNull().default([]),
-  steps: jsonb("steps").$type().notNull().default([]),
-  tips: jsonb("tips").$type().notNull().default([]),
-  storageNotes: text("storage_notes").notNull().default(""),
-  faq: jsonb("faq").$type().notNull().default([]),
-  prepTimeMin: integer("prep_time_min").notNull(),
-  cookTimeMin: integer("cook_time_min").notNull().default(0),
-  servings: integer("servings").notNull(),
-  difficulty: varchar("difficulty", { length: 24 }).notNull(),
-  status: recipeStatus("status").notNull().default("draft"),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  aiModel: varchar("ai_model", { length: 120 }),
-  generationMeta: jsonb("generation_meta").$type().notNull().default({}),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
-}, (table) => [
-  uniqueIndex("recipes_slug_uidx").on(table.slug),
-  index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()),
-  index("recipes_category_idx").on(table.category),
-  index("recipes_subcategory_slug_idx").on(table.subcategorySlug)
-]);
+var recipes = pgTable(
+  "recipes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: varchar("slug", { length: 180 }).notNull(),
+    title: varchar("title", { length: 180 }).notNull(),
+    excerpt: varchar("excerpt", { length: 160 }).notNull(),
+    category: varchar("category", { length: 80 }).notNull(),
+    subcategory: varchar("subcategory", { length: 120 }),
+    subcategorySlug: varchar("subcategory_slug", { length: 120 }),
+    tags: text("tags").array().notNull().default([]),
+    coverImageUrl: text("cover_image_url").notNull(),
+    coverImageAlt: varchar("cover_image_alt", { length: 240 }).notNull(),
+    imagePrompt: text("image_prompt").notNull().default(""),
+    coverImageVariants: jsonb("cover_image_variants").$type().notNull().default({}),
+    ingredients: jsonb("ingredients").$type().notNull().default([]),
+    steps: jsonb("steps").$type().notNull().default([]),
+    tips: jsonb("tips").$type().notNull().default([]),
+    storageNotes: text("storage_notes").notNull().default(""),
+    faq: jsonb("faq").$type().notNull().default([]),
+    prepTimeMin: integer("prep_time_min").notNull(),
+    cookTimeMin: integer("cook_time_min").notNull().default(0),
+    servings: integer("servings").notNull(),
+    difficulty: varchar("difficulty", { length: 24 }).notNull(),
+    status: recipeStatus("status").notNull().default("draft"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    aiModel: varchar("ai_model", { length: 120 }),
+    generationMeta: jsonb("generation_meta").$type().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    uniqueIndex("recipes_slug_uidx").on(table.slug),
+    index("recipes_status_published_at_idx").on(
+      table.status,
+      table.publishedAt.desc()
+    ),
+    index("recipes_category_idx").on(table.category),
+    index("recipes_subcategory_slug_idx").on(table.subcategorySlug)
+  ]
+);
+var categories = pgTable(
+  "categories",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name").notNull(),
+    slug: varchar("slug").notNull(),
+    parentId: integer("parent_id"),
+    active: boolean("active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      name: "categories_parent_id_fkey",
+      columns: [table.parentId],
+      foreignColumns: [table.id]
+    }).onDelete("restrict"),
+    check(
+      "categories_not_own_parent",
+      sql`(${table.parentId} is null or ${table.parentId} <> ${table.id})`
+    ),
+    unique("categories_slug_key").on(table.slug),
+    index("categories_parent_id_idx").on(table.parentId),
+    index("categories_active_sort_idx").on(table.active, table.sortOrder)
+  ]
+);
+var tipTopics = pgTable(
+  "tip_topics",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name").notNull(),
+    slug: varchar("slug").notNull(),
+    description: text("description"),
+    active: boolean("active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    unique("tip_topics_slug_key").on(table.slug),
+    index("tip_topics_active_sort_idx").on(table.active, table.sortOrder)
+  ]
+);
+var articles = pgTable(
+  "articles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    title: varchar("title").notNull(),
+    slug: varchar("slug").notNull(),
+    excerpt: text("excerpt"),
+    content: text("content").default("").notNull(),
+    articleType: varchar("article_type").default("materia").notNull(),
+    status: varchar("status").default("draft").notNull(),
+    categoryId: integer("category_id"),
+    topicId: integer("topic_id"),
+    coverImageUrl: text("cover_image_url"),
+    coverImageAlt: varchar("cover_image_alt"),
+    seoTitle: varchar("seo_title"),
+    seoDescription: varchar("seo_description"),
+    author: varchar("author"),
+    aiModel: varchar("ai_model"),
+    generationMeta: jsonb("generation_meta").$type().default({}).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      name: "articles_category_id_fkey",
+      columns: [table.categoryId],
+      foreignColumns: [categories.id]
+    }).onDelete("set null"),
+    foreignKey({
+      name: "articles_topic_id_fkey",
+      columns: [table.topicId],
+      foreignColumns: [tipTopics.id]
+    }).onDelete("set null"),
+    unique("articles_slug_key").on(table.slug),
+    check(
+      "articles_type_check",
+      sql`${table.articleType} in ('dica', 'tecnica', 'materia')`
+    ),
+    check(
+      "articles_status_check",
+      sql`${table.status} in ('draft', 'published', 'archived')`
+    ),
+    index("articles_status_published_idx").on(
+      table.status,
+      table.publishedAt.desc()
+    ),
+    index("articles_type_status_idx").on(table.articleType, table.status),
+    index("articles_category_id_idx").on(table.categoryId),
+    index("articles_topic_id_idx").on(table.topicId),
+    index("articles_created_at_idx").on(table.createdAt.desc())
+  ]
+);
+var articleImages = pgTable(
+  "article_images",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    articleId: uuid("article_id").notNull(),
+    imageUrl: text("image_url").notNull(),
+    altText: varchar("alt_text"),
+    caption: text("caption"),
+    position: integer("position").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      name: "article_images_article_id_fkey",
+      columns: [table.articleId],
+      foreignColumns: [articles.id]
+    }).onDelete("cascade"),
+    index("article_images_article_position_idx").on(
+      table.articleId,
+      table.position
+    )
+  ]
+);
+var articleTags = pgTable(
+  "article_tags",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    articleId: uuid("article_id").notNull(),
+    tag: varchar("tag").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    foreignKey({
+      name: "article_tags_article_id_fkey",
+      columns: [table.articleId],
+      foreignColumns: [articles.id]
+    }).onDelete("cascade"),
+    unique("article_tags_unique").on(table.articleId, table.tag),
+    index("article_tags_article_id_idx").on(table.articleId),
+    index("article_tags_tag_idx").on(table.tag)
+  ]
+);
 
 // server/_core/env.ts
 var ENV = {
@@ -169,7 +336,7 @@ var ENV = {
 var _sql = null;
 var _db = null;
 function resolveDatabaseUrl() {
-  return ENV.neonDatabaseUrl || ENV.databaseUrl || void 0;
+  return ENV.databaseUrl || ENV.neonDatabaseUrl || void 0;
 }
 function buildPostgresOptions(connectionString) {
   const isNeon = connectionString.includes("neon.tech");
@@ -580,7 +747,7 @@ var recipeListQuerySchema = z3.object({
 });
 
 // server/recipeDb.ts
-import { and, desc, eq as eq2, gt, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq as eq2, gt, ilike, isNotNull, lt, or, sql as sql2 } from "drizzle-orm";
 var recipeSummarySelection = {
   id: recipes.id,
   slug: recipes.slug,
@@ -632,7 +799,7 @@ async function listRecipes(options, dbOverride) {
     conditions.push(or(
       ilike(recipes.title, pattern),
       ilike(recipes.excerpt, pattern),
-      sql`${recipes.ingredients}::text ILIKE ${pattern}`
+      sql2`${recipes.ingredients}::text ILIKE ${pattern}`
     ));
   }
   if (options.cursor) {
@@ -1055,6 +1222,612 @@ function createRecipesRouter() {
   return router2;
 }
 
+// server/articlesRoutes.ts
+import { createHash as createHash2, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
+import express2 from "express";
+import { z as z6 } from "zod";
+
+// shared/articles.ts
+import { z as z5 } from "zod";
+var httpUrlSchema = z5.string().trim().url().refine((value) => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "O URL deve usar HTTP ou HTTPS.");
+var articleImageInputSchema = z5.object({
+  imageUrl: httpUrlSchema,
+  altText: z5.string().trim().max(500).nullable().optional(),
+  caption: z5.string().trim().max(5e3).nullable().optional(),
+  position: z5.number().int().min(0).max(1e4).optional()
+});
+var slugSchema = z5.string().trim().min(1).max(180).regex(
+  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  "O slug deve usar apenas min\xFAsculas, n\xFAmeros e h\xEDfen simples."
+);
+var articleInputSchema = z5.object({
+  title: z5.string().trim().min(1).max(500),
+  slug: slugSchema,
+  excerpt: z5.string().trim().max(1e4).nullable().optional(),
+  content: z5.string().min(1).max(1e6),
+  articleType: z5.enum(["dica", "tecnica", "materia"]),
+  status: z5.enum(["draft", "published"]).default("draft"),
+  categoryId: z5.number().int().positive().nullable().optional(),
+  topicId: z5.number().int().positive().nullable().optional(),
+  categorySlug: slugSchema.nullable().optional(),
+  topicSlug: slugSchema.nullable().optional(),
+  coverImageUrl: httpUrlSchema.nullable().optional(),
+  coverImageAlt: z5.string().trim().max(500).nullable().optional(),
+  seoTitle: z5.string().trim().max(1e3).nullable().optional(),
+  seoDescription: z5.string().trim().max(5e3).nullable().optional(),
+  author: z5.string().trim().max(500).nullable().optional(),
+  aiModel: z5.string().trim().max(500).nullable().optional(),
+  generationMeta: z5.record(z5.string(), z5.unknown()).default({}),
+  tags: z5.array(z5.string().trim().min(1).max(200)).max(100).default([]).superRefine((tags, context) => {
+    if (new Set(tags).size !== tags.length) {
+      context.addIssue({
+        code: "custom",
+        message: "As tags n\xE3o podem repetir-se."
+      });
+    }
+  }),
+  images: z5.array(articleImageInputSchema).max(100).default([])
+}).strict().superRefine((value, context) => {
+  if (value.categoryId && value.categorySlug) {
+    context.addIssue({
+      code: "custom",
+      path: ["categorySlug"],
+      message: "Envie categoryId ou categorySlug, n\xE3o ambos."
+    });
+  }
+  if (value.topicId && value.topicSlug) {
+    context.addIssue({
+      code: "custom",
+      path: ["topicSlug"],
+      message: "Envie topicId ou topicSlug, n\xE3o ambos."
+    });
+  }
+});
+
+// server/articleDb.ts
+import {
+  and as and2,
+  asc,
+  count,
+  desc as desc2,
+  eq as eq3,
+  inArray,
+  isNotNull as isNotNull2,
+  lt as lt2,
+  or as or2
+} from "drizzle-orm";
+var ArticleSlugConflictError = class extends Error {
+  constructor() {
+    super("J\xE1 existe um artigo com este slug.");
+    this.name = "ArticleSlugConflictError";
+  }
+};
+var ArticleReferenceError = class extends Error {
+  code;
+  constructor(message, code) {
+    super(message);
+    this.name = "ArticleReferenceError";
+    this.code = code;
+  }
+};
+var InvalidTipCursorError = class extends Error {
+  constructor() {
+    super("Cursor de dicas inv\xE1lido.");
+    this.name = "InvalidTipCursorError";
+  }
+};
+function requireDb2(db) {
+  if (!db) throw new Error("A base de dados n\xE3o est\xE1 configurada.");
+  return db;
+}
+var TIP_TYPES = ["dica", "tecnica"];
+var UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function decodeTipCursor(value) {
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8")
+    );
+    if (typeof parsed.publishedAt !== "string" || typeof parsed.id !== "string" || !UUID_PATTERN.test(parsed.id)) {
+      throw new InvalidTipCursorError();
+    }
+    const publishedAt = new Date(parsed.publishedAt);
+    if (Number.isNaN(publishedAt.getTime())) {
+      throw new InvalidTipCursorError();
+    }
+    return { publishedAt, id: parsed.id };
+  } catch (error) {
+    if (error instanceof InvalidTipCursorError) throw error;
+    throw new InvalidTipCursorError();
+  }
+}
+function encodeTipCursor(article) {
+  return Buffer.from(
+    JSON.stringify({
+      publishedAt: article.publishedAt.toISOString(),
+      id: article.id
+    }),
+    "utf8"
+  ).toString("base64url");
+}
+function publishedTipFilters() {
+  return [
+    eq3(tipTopics.active, true),
+    inArray(articles.articleType, [...TIP_TYPES]),
+    eq3(articles.status, "published"),
+    isNotNull2(articles.publishedAt)
+  ];
+}
+async function listActiveTipTopics(dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const rows = await db.select({
+    id: tipTopics.id,
+    slug: tipTopics.slug,
+    name: tipTopics.name,
+    description: tipTopics.description,
+    articleCount: count(articles.id)
+  }).from(tipTopics).leftJoin(
+    articles,
+    and2(
+      eq3(articles.topicId, tipTopics.id),
+      inArray(articles.articleType, [...TIP_TYPES]),
+      eq3(articles.status, "published"),
+      isNotNull2(articles.publishedAt)
+    )
+  ).where(eq3(tipTopics.active, true)).groupBy(
+    tipTopics.id,
+    tipTopics.slug,
+    tipTopics.name,
+    tipTopics.description,
+    tipTopics.sortOrder
+  ).orderBy(asc(tipTopics.sortOrder), asc(tipTopics.name));
+  return rows.map((row) => ({
+    ...row,
+    articleCount: Number(row.articleCount)
+  }));
+}
+async function listPublishedTips(params, dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const filters = publishedTipFilters();
+  if (params.topic) {
+    filters.push(eq3(tipTopics.slug, params.topic));
+  }
+  if (params.cursor) {
+    const cursor = decodeTipCursor(params.cursor);
+    filters.push(
+      or2(
+        lt2(articles.publishedAt, cursor.publishedAt),
+        and2(
+          eq3(articles.publishedAt, cursor.publishedAt),
+          lt2(articles.id, cursor.id)
+        )
+      )
+    );
+  }
+  const rows = await db.select({
+    id: articles.id,
+    slug: articles.slug,
+    title: articles.title,
+    excerpt: articles.excerpt,
+    articleType: articles.articleType,
+    topicSlug: tipTopics.slug,
+    topicName: tipTopics.name,
+    coverImageUrl: articles.coverImageUrl,
+    coverImageAlt: articles.coverImageAlt,
+    publishedAt: articles.publishedAt,
+    updatedAt: articles.updatedAt
+  }).from(articles).innerJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(and2(...filters)).orderBy(desc2(articles.publishedAt), desc2(articles.id)).limit(params.limit + 1);
+  const hasMore = rows.length > params.limit;
+  const visibleRows = rows.slice(0, params.limit);
+  const articlesMissingCover = visibleRows.filter((row) => !row.coverImageUrl).map((row) => row.id);
+  const fallbackImages = /* @__PURE__ */ new Map();
+  if (articlesMissingCover.length > 0) {
+    const imageRows = await db.select({
+      articleId: articleImages.articleId,
+      imageUrl: articleImages.imageUrl,
+      altText: articleImages.altText
+    }).from(articleImages).where(inArray(articleImages.articleId, articlesMissingCover)).orderBy(asc(articleImages.position), asc(articleImages.createdAt));
+    for (const image of imageRows) {
+      if (!fallbackImages.has(image.articleId)) {
+        fallbackImages.set(image.articleId, {
+          imageUrl: image.imageUrl,
+          altText: image.altText
+        });
+      }
+    }
+  }
+  const items = visibleRows.map((row) => {
+    const fallback = fallbackImages.get(row.id);
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      excerpt: row.excerpt,
+      articleType: row.articleType,
+      topic: { slug: row.topicSlug, name: row.topicName },
+      coverImageUrl: row.coverImageUrl ?? fallback?.imageUrl ?? null,
+      coverImageAlt: row.coverImageAlt ?? fallback?.altText ?? null,
+      publishedAt: row.publishedAt,
+      updatedAt: row.updatedAt
+    };
+  });
+  const last = visibleRows[visibleRows.length - 1];
+  return {
+    items,
+    nextCursor: hasMore && last?.publishedAt ? encodeTipCursor({ id: last.id, publishedAt: last.publishedAt }) : null
+  };
+}
+function readSources(metadata) {
+  const value = metadata.sources;
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const source = item;
+    const name = typeof source.name === "string" ? source.name.trim() : "";
+    const title = typeof source.title === "string" ? source.title.trim() : "";
+    const url = typeof source.url === "string" ? source.url.trim() : "";
+    if (!name || !title || !url) return [];
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return [];
+    } catch {
+      return [];
+    }
+    return [{ name, title, url }];
+  });
+}
+async function getPublishedTipBySlug(slug, dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  const rows = await db.select({
+    id: articles.id,
+    slug: articles.slug,
+    title: articles.title,
+    excerpt: articles.excerpt,
+    articleType: articles.articleType,
+    content: articles.content,
+    topicSlug: tipTopics.slug,
+    topicName: tipTopics.name,
+    coverImageUrl: articles.coverImageUrl,
+    coverImageAlt: articles.coverImageAlt,
+    publishedAt: articles.publishedAt,
+    updatedAt: articles.updatedAt,
+    author: articles.author,
+    seoTitle: articles.seoTitle,
+    seoDescription: articles.seoDescription,
+    generationMeta: articles.generationMeta
+  }).from(articles).innerJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(
+    and2(
+      eq3(articles.slug, slug),
+      eq3(tipTopics.active, true),
+      inArray(articles.articleType, [...TIP_TYPES]),
+      eq3(articles.status, "published"),
+      isNotNull2(articles.publishedAt)
+    )
+  ).limit(1);
+  const row = rows[0];
+  if (!row || !row.publishedAt) return null;
+  const [imageRows, tagRows] = await Promise.all([
+    db.select({
+      imageUrl: articleImages.imageUrl,
+      altText: articleImages.altText,
+      caption: articleImages.caption,
+      position: articleImages.position
+    }).from(articleImages).where(eq3(articleImages.articleId, row.id)).orderBy(asc(articleImages.position)),
+    db.select({ tag: articleTags.tag }).from(articleTags).where(eq3(articleTags.articleId, row.id)).orderBy(asc(articleTags.tag))
+  ]);
+  const images = imageRows.map((image) => ({
+    imageUrl: image.imageUrl,
+    altText: image.altText,
+    caption: image.caption,
+    position: image.position
+  }));
+  const metadata = row.generationMeta && typeof row.generationMeta === "object" ? row.generationMeta : {};
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    articleType: row.articleType,
+    topic: { slug: row.topicSlug, name: row.topicName },
+    coverImageUrl: row.coverImageUrl ?? images[0]?.imageUrl ?? null,
+    coverImageAlt: row.coverImageAlt ?? images[0]?.altText ?? null,
+    publishedAt: row.publishedAt,
+    updatedAt: row.updatedAt,
+    content: row.content,
+    author: row.author,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    tags: tagRows.map((item) => item.tag),
+    images,
+    sources: readSources(metadata)
+  };
+}
+async function createArticle(input, dbOverride) {
+  const db = requireDb2(dbOverride ?? await getDb());
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select({ id: articles.id }).from(articles).where(eq3(articles.slug, input.slug)).limit(1);
+    if (existing) throw new ArticleSlugConflictError();
+    let categoryId = input.categoryId ?? null;
+    if (!categoryId && input.categorySlug) {
+      const [bySlug] = await tx.select({ id: categories.id }).from(categories).where(eq3(categories.slug, input.categorySlug)).limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "A categoria indicada n\xE3o existe.",
+          "category_not_found"
+        );
+      }
+      categoryId = bySlug.id;
+    }
+    if (categoryId) {
+      const [category] = await tx.select({ id: categories.id, parentId: categories.parentId }).from(categories).where(eq3(categories.id, categoryId)).limit(1);
+      if (!category) {
+        throw new ArticleReferenceError(
+          "A categoria indicada n\xE3o existe.",
+          "category_not_found"
+        );
+      }
+      if (category.parentId) {
+        const [parent] = await tx.select({ id: categories.id, parentId: categories.parentId }).from(categories).where(eq3(categories.id, category.parentId)).limit(1);
+        if (!parent) {
+          throw new ArticleReferenceError(
+            "A categoria-pai indicada n\xE3o existe.",
+            "category_parent_not_found"
+          );
+        }
+        if (parent.parentId) {
+          throw new ArticleReferenceError(
+            "A categoria ultrapassa o limite de dois n\xEDveis.",
+            "category_depth_exceeded"
+          );
+        }
+      }
+    }
+    let topicId = input.topicId ?? null;
+    if (!topicId && input.topicSlug) {
+      const [bySlug] = await tx.select({ id: tipTopics.id }).from(tipTopics).where(eq3(tipTopics.slug, input.topicSlug)).limit(1);
+      if (!bySlug) {
+        throw new ArticleReferenceError(
+          "O t\xF3pico indicado n\xE3o existe.",
+          "topic_not_found"
+        );
+      }
+      topicId = bySlug.id;
+    }
+    if (topicId) {
+      const [topic] = await tx.select({ id: tipTopics.id }).from(tipTopics).where(eq3(tipTopics.id, topicId)).limit(1);
+      if (!topic) {
+        throw new ArticleReferenceError(
+          "O t\xF3pico indicado n\xE3o existe.",
+          "topic_not_found"
+        );
+      }
+    }
+    const now = /* @__PURE__ */ new Date();
+    const publishedAt = input.status === "published" ? now : null;
+    const [article] = await tx.insert(articles).values({
+      title: input.title,
+      slug: input.slug,
+      excerpt: input.excerpt ?? null,
+      content: input.content,
+      articleType: input.articleType,
+      status: input.status,
+      categoryId,
+      topicId,
+      coverImageUrl: input.coverImageUrl ?? null,
+      coverImageAlt: input.coverImageAlt ?? null,
+      seoTitle: input.seoTitle ?? null,
+      seoDescription: input.seoDescription ?? null,
+      author: input.author ?? null,
+      aiModel: input.aiModel ?? null,
+      generationMeta: input.generationMeta,
+      publishedAt,
+      updatedAt: now
+    }).returning();
+    if (!article)
+      throw new Error("A inser\xE7\xE3o do artigo n\xE3o devolveu um registo.");
+    const tags = input.tags.map((tag) => tag.trim());
+    if (tags.length > 0) {
+      await tx.insert(articleTags).values(tags.map((tag) => ({ articleId: article.id, tag })));
+    }
+    const images = input.images.map((image, position) => ({
+      articleId: article.id,
+      imageUrl: image.imageUrl,
+      altText: image.altText ?? null,
+      caption: image.caption ?? null,
+      position: image.position ?? position
+    }));
+    if (images.length > 0) {
+      await tx.insert(articleImages).values(images);
+    }
+    return { ...article, tags, images };
+  });
+}
+
+// server/articlesRoutes.ts
+var MAX_BODY_BYTES = 1e6;
+var SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+var tipsQuerySchema = z6.object({
+  topic: z6.string().trim().min(1).max(180).regex(SLUG_PATTERN).optional(),
+  limit: z6.coerce.number().int().min(1).max(24).default(12),
+  cursor: z6.string().trim().min(1).max(512).optional()
+}).strict();
+function timingSafeTokenEquals2(received, expected) {
+  const receivedDigest = createHash2("sha256").update(received).digest();
+  const expectedDigest = createHash2("sha256").update(expected).digest();
+  return received.length > 0 && timingSafeEqual2(receivedDigest, expectedDigest);
+}
+function readBearer2(req) {
+  const value = req.header("authorization") ?? "";
+  return value.startsWith("Bearer ") ? value.slice(7).trim() : "";
+}
+function isSlugUniqueViolation(error) {
+  let current = error;
+  for (let depth = 0; current && depth < 5; depth += 1) {
+    const dbError = current;
+    const constraint = dbError.constraint_name ?? dbError.constraint;
+    if (dbError.code === "23505" && constraint === "articles_slug_key") {
+      return true;
+    }
+    current = dbError.cause;
+  }
+  return false;
+}
+function logPublicReadError(label, error) {
+  console.error(
+    "[Articles] " + label + " failed:",
+    error instanceof Error ? error.name : "UnknownError"
+  );
+}
+function createArticlesRouter(options = {}) {
+  const router2 = express2.Router();
+  const getToken = options.getToken ?? (() => process.env.RECIPES_AGENT_TOKEN);
+  const create = options.createArticle ?? createArticle;
+  const listTopics = options.listTipTopics ?? listActiveTipTopics;
+  const listTips = options.listTips ?? listPublishedTips;
+  const getTip = options.getTip ?? getPublishedTipBySlug;
+  router2.get("/topics", async (_req, res) => {
+    try {
+      const items = await listTopics();
+      res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+      res.json({ items });
+    } catch (error) {
+      logPublicReadError("topics read", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar os assuntos das dicas."
+        }
+      });
+    }
+  });
+  router2.get("/", async (req, res) => {
+    const parsed = tipsQuerySchema.safeParse({
+      topic: req.query.topic,
+      limit: req.query.limit ?? 12,
+      cursor: req.query.cursor
+    });
+    if (!parsed.success) {
+      res.status(400).json({
+        error: {
+          code: "invalid_query",
+          message: "Os filtros de dicas s\xE3o inv\xE1lidos."
+        }
+      });
+      return;
+    }
+    try {
+      const page = await listTips(parsed.data);
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json(page);
+    } catch (error) {
+      if (error instanceof InvalidTipCursorError) {
+        res.status(400).json({
+          error: {
+            code: "invalid_cursor",
+            message: "O cursor de pagina\xE7\xE3o \xE9 inv\xE1lido."
+          }
+        });
+        return;
+      }
+      logPublicReadError("public list", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar as dicas."
+        }
+      });
+    }
+  });
+  router2.get("/:slug", async (req, res) => {
+    const slug = String(req.params.slug);
+    if (!SLUG_PATTERN.test(slug)) {
+      res.status(404).json({
+        error: { code: "not_found", message: "Dica n\xE3o encontrada." }
+      });
+      return;
+    }
+    try {
+      const article = await getTip(slug);
+      if (!article) {
+        res.status(404).json({
+          error: { code: "not_found", message: "Dica n\xE3o encontrada." }
+        });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+      res.json(article);
+    } catch (error) {
+      logPublicReadError("public detail", error);
+      res.status(503).json({
+        error: {
+          code: "server_error",
+          message: "N\xE3o foi poss\xEDvel carregar esta dica."
+        }
+      });
+    }
+  });
+  router2.post("/", async (req, res) => {
+    const expected = getToken();
+    if (!expected) {
+      res.status(503).json({ error: "A autentica\xE7\xE3o do endpoint n\xE3o est\xE1 configurada." });
+      return;
+    }
+    const received = readBearer2(req);
+    if (!received) {
+      res.status(401).json({ error: "\xC9 necess\xE1rio enviar um token Bearer." });
+      return;
+    }
+    if (!timingSafeTokenEquals2(received, expected)) {
+      res.status(403).json({ error: "Token inv\xE1lido." });
+      return;
+    }
+    const bodyBytes = Buffer.byteLength(JSON.stringify(req.body ?? {}), "utf8");
+    if (bodyBytes > MAX_BODY_BYTES) {
+      res.status(413).json({ error: "O conte\xFAdo excede o limite permitido." });
+      return;
+    }
+    const parsed = articleInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Artigo inv\xE1lido.", details: parsed.error.flatten() });
+      return;
+    }
+    try {
+      const article = await create(parsed.data);
+      res.status(201).json({
+        id: article.id,
+        title: article.title,
+        slug: article.slug,
+        articleType: article.articleType,
+        status: article.status,
+        publishedAt: article.publishedAt,
+        tags: article.tags,
+        images: article.images
+      });
+    } catch (error) {
+      if (error instanceof ArticleSlugConflictError || isSlugUniqueViolation(error)) {
+        res.status(409).json({
+          error: "J\xE1 existe um artigo com este slug.",
+          code: "duplicate_slug"
+        });
+        return;
+      }
+      if (error instanceof ArticleReferenceError) {
+        res.status(422).json({ error: error.message, code: error.code });
+        return;
+      }
+      console.error("[Articles] create failed.");
+      res.status(500).json({ error: "N\xE3o foi poss\xEDvel criar o artigo." });
+    }
+  });
+  return router2;
+}
+
 // client/src/config/site.ts
 var SITE = {
   name: "Chocol\xEDcia \u2013 Arte dos Doces e Buffet",
@@ -1199,31 +1972,46 @@ async function serveRecipePage(slug, res, next) {
     const recipe = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedRecipeBySlug(slug) : null;
     const templatePath = process.env.NODE_ENV === "development" ? path.resolve(process.cwd(), "client/index.html") : path.resolve(process.cwd(), "dist/recipe-shell.html");
     const template = await fs.readFile(templatePath, "utf8");
-    res.status(recipe ? 200 : 404).type("html").setHeader("Cache-Control", recipe ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store").send(renderRecipePageHtml(template, recipe));
+    res.status(recipe ? 200 : 404).type("html").setHeader(
+      "Cache-Control",
+      recipe ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store"
+    ).send(renderRecipePageHtml(template, recipe));
   } catch (error) {
     next(error);
   }
 }
 async function serveSitemap(res) {
   try {
-    res.type("application/xml").setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    res.type("application/xml").setHeader(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=300"
+    );
     res.send(await generateRecipesSitemap());
   } catch (error) {
     console.error("[RecipeSitemap] generation failed:", error);
-    res.status(503).type("application/xml").send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+    res.status(503).type("application/xml").send(
+      '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+    );
   }
 }
 async function createApp() {
-  const app = express2();
+  const app = express3();
   app.set("trust proxy", 1);
-  app.use(express2.json({ limit: "50mb" }));
-  app.use(express2.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express3.json({ limit: "50mb" }));
+  app.use(express3.urlencoded({ limit: "50mb", extended: true }));
   registerAuthRoutes(app);
-  app.get("/api/recipe-page", (req, res, next) => serveRecipePage(String(req.query.slug ?? ""), res, next));
+  app.get(
+    "/api/recipe-page",
+    (req, res, next) => serveRecipePage(String(req.query.slug ?? ""), res, next)
+  );
   app.get("/api/recipes-sitemap", (_req, res) => serveSitemap(res));
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
-  app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
+  app.get(
+    "/receitas/:slug",
+    (req, res, next) => serveRecipePage(String(req.params.slug), res, next)
+  );
   app.use("/api/recipes", createRecipesRouter());
+  app.use("/api/articles", createArticlesRouter());
   app.use(
     "/api/trpc",
     createExpressMiddleware({
