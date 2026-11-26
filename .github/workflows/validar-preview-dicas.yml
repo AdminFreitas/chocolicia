@@ -1,0 +1,84 @@
+name: Validar Preview da página Dicas
+
+on:
+  push:
+    branches:
+      - fix/articles-neon-integration
+    paths:
+      - "client/src/pages/Dicas.tsx"
+      - "client/src/lib/articles.ts"
+      - "server/articleDb.ts"
+      - "server/articlesRoutes.ts"
+      - "client/src/App.tsx"
+      - "client/src/seo/routeMeta.ts"
+      - ".github/workflows/validar-preview-dicas.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preview-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Emitir identidade OIDC do GitHub Actions
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken();
+            core.setSecret(token);
+            core.setOutput("token", token);
+
+      - name: Validar página e APIs públicas no Preview (somente GET)
+        env:
+          VERCEL_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          PREVIEW_BASE_URL: https://chocolicia-git-fix-articles-233f2b-chocoliciaartedosdoces-9565.vercel.app
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          request() {
+            local path="$1"
+            local output="$2"
+            local status
+            status="$(curl --silent --show-error \
+              --output "$output" \
+              --write-out "%{http_code}" \
+              --header "x-vercel-trusted-oidc-idp-token: ${VERCEL_TRUSTED_OIDC_TOKEN}" \
+              "${PREVIEW_BASE_URL}${path}")"
+            echo "$path: HTTP $status"
+            if [[ "$status" != "200" ]]; then
+              cat "$output"
+              return 1
+            fi
+          }
+
+          request "/dicas" "$tmp/dicas.html"
+          grep -Fq "Dicas para preparar e apresentar doces" "$tmp/dicas.html"
+          echo "A rota /dicas respondeu 200 e contém o título esperado."
+
+          request "/api/articles/topics" "$tmp/topics.json"
+          jq -e '.items | type == "array"' "$tmp/topics.json" >/dev/null
+          echo "A API de assuntos respondeu com items[] válido."
+
+          request "/api/articles?limit=9" "$tmp/articles.json"
+          jq -e '.items | type == "array"' "$tmp/articles.json" >/dev/null
+          jq -e '(.nextCursor == null) or (.nextCursor | type == "string")' "$tmp/articles.json" >/dev/null
+          echo "A API de listagem respondeu com paginação válida."
+
+          slug="$(jq -r '.items[0].slug // empty' "$tmp/articles.json")"
+          if [[ -n "$slug" ]]; then
+            encoded_slug="$(jq -rn --arg value "$slug" '$value | @uri')"
+            request "/api/articles/${encoded_slug}" "$tmp/article.json"
+            jq -e --arg expected "$slug" '.slug == $expected and (.content | type == "string")' "$tmp/article.json" >/dev/null
+            echo "O detalhe do primeiro artigo publicado respondeu corretamente."
+          else
+            echo "Nenhum artigo publicado no momento; a consulta vazia foi validada."
+          fi
+
+          echo "Smoke test concluído. Nenhum POST ou dado foi criado ou alterado."
