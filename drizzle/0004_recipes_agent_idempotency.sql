@@ -1,5 +1,5 @@
 -- Add the physical recipe idempotency columns used by server/recipeDb.ts.
--- Safe to run when columns already exist; preserves all recipe rows.
+-- Safe to rerun when columns or the expected index already exist; preserves rows.
 
 ALTER TABLE public.recipes
   ADD COLUMN IF NOT EXISTS agent_topic_slug varchar,
@@ -14,6 +14,8 @@ SET
 WHERE generation_meta IS NOT NULL;
 
 DO $migration$
+DECLARE
+  existing_definition text;
 BEGIN
   IF EXISTS (
     SELECT 1 FROM public.recipes
@@ -22,17 +24,20 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'recipes contains duplicate agent_idempotency_key values; reconcile duplicates before creating the unique index';
   END IF;
-  IF EXISTS (
-    SELECT 1 FROM public.recipes
-    WHERE agent_topic_slug IS NOT NULL
-    GROUP BY agent_topic_slug HAVING COUNT(*) > 1
-  ) THEN
-    RAISE EXCEPTION 'recipes contains duplicate agent_topic_slug values; reconcile duplicates before creating the unique index';
+
+  SELECT indexdef INTO existing_definition
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND indexname = 'recipes_agent_idempotency_key_uidx';
+  IF existing_definition IS NOT NULL
+     AND (existing_definition NOT ILIKE '%CREATE UNIQUE INDEX%'
+       OR existing_definition NOT ILIKE '%(agent_idempotency_key)%') THEN
+    EXECUTE 'DROP INDEX public.recipes_agent_idempotency_key_uidx';
   END IF;
 END $migration$;
 
+-- A publication/pauta slug is metadata, not a request idempotency key.
+DROP INDEX IF EXISTS public.recipes_agent_topic_slug_uidx;
+
 CREATE UNIQUE INDEX IF NOT EXISTS recipes_agent_idempotency_key_uidx
   ON public.recipes (agent_idempotency_key);
---> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS recipes_agent_topic_slug_uidx
-  ON public.recipes (agent_topic_slug);
