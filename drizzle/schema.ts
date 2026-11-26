@@ -151,9 +151,9 @@ export const recipes = pgTable("recipes", {
   nutrition: jsonb("nutrition").$type<Record<string, unknown>>(),
   allergenInfo: jsonb("allergen_info").$type<Record<string, unknown>>(),
   updatedBy: integer("updated_by"),
-  agentTopicSlug: varchar("agent_topic_slug", { length: 180 }),
-  agentIdempotencyKey: varchar("agent_idempotency_key", { length: 128 }),
-  agentRequestHash: varchar("agent_request_hash", { length: 64 }),
+  agentTopicSlug: varchar("agent_topic_slug"),
+  agentIdempotencyKey: varchar("agent_idempotency_key"),
+  agentRequestHash: varchar("agent_request_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
