@@ -16,10 +16,10 @@
       "maxDuration": 30,
       "memory": 1024
     },
-    "api/article-page.js": {
+    "api/tip-page.js": {
       "maxDuration": 30,
       "memory": 1024,
-      "includeFiles": "dist/article-shell.html"
+      "includeFiles": "dist/tip-shell.html"
     }
   },
   "crons": [
@@ -27,7 +27,7 @@
   ],
   "rewrites": [
     { "source": "/receitas/:slug", "destination": "/api/recipe-page?slug=:slug" },
-    { "source": "/dicas/:slug", "destination": "/api/article-page?slug=:slug" },
+    { "source": "/dicas/:slug", "destination": "/api/tip-page?slug=:slug" },
     { "source": "/sitemap.xml", "destination": "/api/recipes-sitemap" },
     { "source": "/api/(.*)", "destination": "/api" }
   ],

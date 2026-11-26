@@ -122,6 +122,8 @@ export const recipeInputSchemaV1 = z.object({
   excerpt: z.string().trim().min(20).max(160),
   intro: z.string().max(2000).optional(),
   subcategorySlug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  authorId: z.number().int().positive().optional(),
+  authorSlug: z.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   secondarySubcategorySlugs: z.array(z.string().trim().min(1).max(120)).max(2).default([]),
   prepTimeMin: z.number().int().min(1).max(1440),
   cookTimeMin: z.number().int().min(0).max(1440).default(0),

@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import RecipePageMeta from "@/components/RecipePageMeta";
 import RecipeSiteChrome from "@/components/RecipeSiteChrome";
-import { fetchArticles, type ArticleSummary } from "@/lib/articles";
+import { fetchTips, type TipSummary } from "@/lib/tips";
 
 export default function Dicas() {
-  const [articles, setArticles] = useState<ArticleSummary[]>([]);
+  const [articles, setArticles] = useState<TipSummary[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchArticles(controller.signal)
+    fetchTips(controller.signal)
       .then(setArticles)
       .catch(() => { if (!controller.signal.aborted) setState("error"); })
       .finally(() => { if (!controller.signal.aborted) setState((current) => current === "error" ? current : "ready"); });
@@ -36,10 +36,10 @@ export default function Dicas() {
               <a href={`/dicas/${encodeURIComponent(article.slug)}`} className="block h-full">
                 <img src={article.coverImageVariants.w800 ?? article.coverImageUrl} alt={article.coverImageAlt} loading="lazy" width="800" height="533" className="aspect-[3/2] w-full object-cover" />
                 <div className="p-5">
-                  <p className="eyebrow">{article.tipTopic?.replaceAll("-", " ") ?? "Conteúdo educativo"}</p>
+                  <p className="eyebrow">{article.type} · {article.tipTopic?.replaceAll("-", " ") ?? "Conteúdo educativo"}</p>
                   <h2 className="mt-2 font-display text-2xl text-[#5A3428]">{article.title}</h2>
                   <p className="mt-2 text-sm leading-6 text-[#8A5A44]">{article.excerpt}</p>
-                  <span className="mt-4 inline-block text-sm font-semibold text-[#5A3428]">Ler dica →</span>
+                  <p className="mt-3 text-xs text-[#8A5A44]">Por {article.authorName ?? "Chocolícia"}</p><span className="mt-4 inline-block text-sm font-semibold text-[#5A3428]">Ler conteúdo →</span>
                 </div>
               </a>
             </article>)}

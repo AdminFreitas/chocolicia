@@ -1,6 +1,6 @@
 import express from "express";
-import { TIP_TOPICS } from "../shared/articles";
-import { getAgentArticleByTopicSlug } from "./articlesDb";
+import { TIP_TOPICS } from "../shared/tips";
+import { getTipByTopicSlug, getTipBySlug } from "./tipsDb";
 import { agentError, agentTokensConfigured, resolveAgentScope } from "./agentAuth";
 import { getAgentRecipeBySlug, getAgentRecipeByTopicSlug, getPublishedRecipeTitlesSince } from "./recipeDb";
 
@@ -15,12 +15,12 @@ const RECIPE_AGENT_TAXONOMY = {
       { slug: "doces-de-colher", name: "Doces de colher", riskLevel: "low", agentEnabled: true, active: true },
     ],
   }],
-  tipTopics: TIP_TOPICS.map((item) => ({
+    tipTopics: TIP_TOPICS.map((item) => ({
     slug: item.slug,
     name: item.name,
-    riskLevel: item.riskLevel,
+    riskLevel: "low",
     active: true,
-    agentEnabled: item.riskLevel === "low",
+    agentEnabled: true,
   })),
 };
 
@@ -79,22 +79,23 @@ export function createAgentReadRouter() {
       if (topicSlug) {
         const [recipe, article] = await Promise.all([
           getAgentRecipeByTopicSlug(topicSlug),
-          getAgentArticleByTopicSlug(topicSlug),
+          getTipByTopicSlug(topicSlug),
         ]);
         if (recipe) found.push({
-          content_type: "recipe", id: recipe.id, slug: recipe.slug, title: recipe.title,
+          content_kind: "recipe", id: recipe.id, slug: recipe.slug, title: recipe.title,
           status: recipe.status, generation_meta: recipe.generationMeta,
         });
         if (article) found.push({
-          content_type: "article", id: article.id, slug: article.slug, title: article.title,
+          content_kind: "tip", id: article.id, slug: article.slug, title: article.title,
           status: article.status, generation_meta: article.generationMeta,
         });
       } else if (slug) {
-        const recipe = await getAgentRecipeBySlug(slug);
+        const [recipe, tip] = await Promise.all([getAgentRecipeBySlug(slug), getTipBySlug(slug)]);
         if (recipe) found.push({
-          content_type: "recipe", id: recipe.id, slug: recipe.slug, title: recipe.title,
+          content_kind: "recipe", id: recipe.id, slug: recipe.slug, title: recipe.title,
           status: recipe.status, generation_meta: recipe.generationMeta,
         });
+        if (tip) found.push({ content_kind: "tip", id: tip.id, slug: tip.slug, title: tip.title, status: tip.status, generation_meta: tip.generationMeta });
       }
       res.json({ exists: found.length > 0, items: found });
     } catch (error) {

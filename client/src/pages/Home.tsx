@@ -10,6 +10,7 @@ import HomePromotionBanner from "../components/HomePromotionBanner";
 import FlipCard from "../components/FlipCard";
 import { SITE, WA_ORCAMENTO, waLink, waProduct } from "@/config/site";
 import { trackEvent } from "@/lib/analytics";
+import { fetchTips, type TipSummary } from "@/lib/tips";
 import { BakerySchema, PageMeta, WebSiteSchema } from "@/seo/JsonLd";
 import { getRouteMeta } from "@/seo/routeMeta";
 import { trpc } from "../lib/trpc";
@@ -276,6 +277,12 @@ function QuoteSection() {
 
 export default function Home() {
   const [lightbox, setLightbox] = useState<string[] | null>(null);
+  const [tips, setTips] = useState<TipSummary[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchTips(controller.signal).then((items) => setTips(items.slice(0, 3))).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && lightbox && setLightbox(null);
     window.addEventListener("keydown", onKey);
@@ -400,6 +407,16 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {tips.length > 0 && <>
+          <div className="section-ornament" aria-hidden="true"><span /></div>
+          <section id="dicas" data-reveal className="reveal bg-[#FFF9F0] px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">
+            <div className="mx-auto max-w-7xl">
+              <div className="section-heading"><div><p className="eyebrow mb-3">Conteúdo educativo</p><h2 className="section-title">Dicas para criar com mais segurança</h2></div><a href="/dicas" className="font-semibold text-[#5A3428]">Ver todas →</a></div>
+              <div className="mt-8 grid gap-5 md:grid-cols-3">{tips.map((tip) => <a key={tip.id} href={`/dicas/${encodeURIComponent(tip.slug)}`} className="rounded-2xl border border-[#D9A83E]/25 bg-white p-5 shadow-sm"><p className="eyebrow">{tip.type} · {tip.tipTopic.replaceAll("-", " ")}</p><h3 className="mt-2 font-display text-2xl text-[#5A3428]">{tip.title}</h3><p className="mt-2 text-sm leading-6 text-[#8A5A44]">{tip.excerpt}</p><p className="mt-4 text-xs text-[#8A5A44]">Por {tip.authorName ?? "Chocolícia"}</p></a>)}</div>
+            </div>
+          </section>
+        </>}
 
         <div className="section-ornament" aria-hidden="true"><span /></div>
         <section id="catalogo" data-reveal className="reveal bg-[#F3E5D0]/65 px-4 py-12 md:px-6 md:py-16 lg:px-8 lg:py-20">

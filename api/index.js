@@ -89,37 +89,14 @@ import postgres from "postgres";
 import { bigint, boolean, foreignKey, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 var userRole = pgEnum("user_role", ["user", "admin"]);
 var recipeStatus = pgEnum("recipe_status", ["draft", "published", "failed"]);
-var users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  openId: varchar("open_id", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("login_method", { length: 64 }),
-  role: userRole("role").default("user").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  lastSignedIn: timestamp("last_signed_in", { withTimezone: true }).defaultNow().notNull()
-});
-var s3Files = pgTable("s3_files", {
-  id: serial("id").primaryKey(),
-  objectKey: text("object_key").notNull().unique(),
-  fileUrl: text("file_url").notNull(),
-  alt: varchar("alt", { length: 180 }).notNull(),
-  contentType: varchar("content_type", { length: 255 }),
-  userId: varchar("user_id", { length: 128 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
-var orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 160 }).notNull(),
-  eventType: varchar("event_type", { length: 120 }).notNull(),
-  guests: varchar("guests", { length: 80 }).notNull(),
-  desiredDate: varchar("desired_date", { length: 32 }),
-  category: varchar("category", { length: 120 }).notNull(),
-  details: text("details"),
-  status: varchar("status", { length: 32 }).default("new").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
+var tipType = pgEnum("tip_type", ["dica", "tecnica", "materia"]);
+var users = pgTable("users", { id: serial("id").primaryKey(), openId: varchar("open_id", { length: 64 }).notNull().unique(), name: text("name"), email: varchar("email", { length: 320 }), loginMethod: varchar("login_method", { length: 64 }), role: userRole("role").default("user").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(), lastSignedIn: timestamp("last_signed_in", { withTimezone: true }).defaultNow().notNull() });
+var s3Files = pgTable("s3_files", { id: serial("id").primaryKey(), objectKey: text("object_key").notNull().unique(), fileUrl: text("file_url").notNull(), alt: varchar("alt", { length: 180 }).notNull(), contentType: varchar("content_type", { length: 255 }), userId: varchar("user_id", { length: 128 }), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() });
+var orders = pgTable("orders", { id: serial("id").primaryKey(), name: varchar("name", { length: 160 }).notNull(), eventType: varchar("event_type", { length: 120 }).notNull(), guests: varchar("guests", { length: 80 }).notNull(), desiredDate: varchar("desired_date", { length: 32 }), category: varchar("category", { length: 120 }).notNull(), details: text("details"), status: varchar("status", { length: 32 }).default("new").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() });
+var authors = pgTable("authors", { id: integer("id").primaryKey(), name: varchar("name", { length: 180 }).notNull(), slug: varchar("slug", { length: 180 }).notNull().unique(), bio: text("bio"), avatarUrl: text("avatar_url"), role: varchar("role", { length: 80 }), active: boolean("active").default(true).notNull() });
+var categories = pgTable("categories", { id: integer("id").primaryKey(), slug: varchar("slug", { length: 180 }).notNull().unique(), name: varchar("name", { length: 180 }).notNull(), parentId: integer("parent_id"), active: boolean("active").default(true).notNull(), riskLevel: varchar("risk_level", { length: 24 }), agentEnabled: boolean("agent_enabled").default(true).notNull() });
+var tipTopics = pgTable("tip_topics", { id: integer("id").primaryKey(), name: varchar("name", { length: 180 }).notNull(), slug: varchar("slug", { length: 180 }).notNull().unique(), description: text("description"), active: boolean("active").default(true).notNull(), sortOrder: integer("sort_order").default(0).notNull() });
+var tags = pgTable("tags", { id: integer("id").primaryKey(), name: varchar("name", { length: 120 }).notNull(), slug: varchar("slug", { length: 120 }).notNull().unique() });
 var recipes = pgTable("recipes", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: varchar("slug", { length: 180 }).notNull(),
@@ -128,6 +105,7 @@ var recipes = pgTable("recipes", {
   category: varchar("category", { length: 80 }).notNull(),
   subcategory: varchar("subcategory", { length: 120 }),
   subcategorySlug: varchar("subcategory_slug", { length: 120 }),
+  authorId: integer("author_id"),
   tags: text("tags").array().notNull().default([]),
   coverImageUrl: text("cover_image_url").notNull(),
   coverImageAlt: varchar("cover_image_alt", { length: 240 }).notNull(),
@@ -151,111 +129,37 @@ var recipes = pgTable("recipes", {
   agentRequestHash: varchar("agent_request_hash", { length: 64 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
-}, (table) => [
-  uniqueIndex("recipes_slug_uidx").on(table.slug),
-  uniqueIndex("recipes_agent_topic_slug_uidx").on(table.agentTopicSlug),
-  uniqueIndex("recipes_agent_idempotency_key_uidx").on(table.agentIdempotencyKey),
-  index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()),
-  index("recipes_category_idx").on(table.category),
-  index("recipes_subcategory_slug_idx").on(table.subcategorySlug)
-]);
-var authors = pgTable("authors", {
-  id: integer("id").primaryKey(),
-  name: varchar("name", { length: 180 }).notNull(),
-  slug: varchar("slug", { length: 180 }).notNull(),
-  bio: text("bio"),
-  avatarUrl: text("avatar_url"),
-  role: varchar("role", { length: 80 }),
-  active: boolean("active")
-});
-var categories = pgTable("categories", {
-  id: integer("id").primaryKey(),
-  slug: varchar("slug", { length: 180 }).notNull(),
-  name: varchar("name", { length: 180 }).notNull(),
-  parentId: integer("parent_id"),
-  active: boolean("active"),
-  riskLevel: varchar("risk_level", { length: 24 }),
-  agentEnabled: boolean("agent_enabled")
-});
-var tipTopics = pgTable("tip_topics", {
-  id: integer("id").primaryKey(),
-  name: varchar("name", { length: 180 }).notNull(),
-  slug: varchar("slug", { length: 180 }).notNull(),
-  description: text("description"),
-  active: boolean("active"),
-  sortOrder: integer("sort_order")
-});
-var tags = pgTable("tags", {
-  id: integer("id").primaryKey(),
-  name: varchar("name", { length: 120 }).notNull(),
-  slug: varchar("slug", { length: 120 }).notNull()
-});
-var images = pgTable("images", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  fileUrl: text("file_url").notNull(),
-  storageKey: text("storage_key"),
-  fileName: varchar("file_name", { length: 255 }),
-  altText: varchar("alt_text", { length: 240 }),
-  caption: text("caption"),
-  contentType: varchar("content_type", { length: 120 }),
-  fileSize: bigint("file_size", { mode: "number" }),
-  width: integer("width"),
-  height: integer("height"),
-  imageType: varchar("image_type", { length: 40 }),
-  sourceType: varchar("source_type", { length: 40 }),
-  generationMeta: jsonb("generation_meta").$type(),
-  active: boolean("active"),
-  createdAt: timestamp("created_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-});
-var articles = pgTable("articles", {
+}, (table) => [foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "recipes_author_id_fkey" }), uniqueIndex("recipes_slug_uidx").on(table.slug), uniqueIndex("recipes_agent_topic_slug_uidx").on(table.agentTopicSlug), uniqueIndex("recipes_agent_idempotency_key_uidx").on(table.agentIdempotencyKey), index("recipes_status_published_at_idx").on(table.status, table.publishedAt.desc()), index("recipes_category_idx").on(table.category), index("recipes_subcategory_slug_idx").on(table.subcategorySlug)]);
+var images = pgTable("images", { id: uuid("id").defaultRandom().primaryKey(), fileUrl: text("file_url").notNull(), storageKey: text("storage_key"), fileName: varchar("file_name", { length: 255 }), altText: varchar("alt_text", { length: 240 }), caption: text("caption"), contentType: varchar("content_type", { length: 120 }), fileSize: bigint("file_size", { mode: "number" }), width: integer("width"), height: integer("height"), imageType: varchar("image_type", { length: 40 }), sourceType: varchar("source_type", { length: 40 }), generationMeta: jsonb("generation_meta").$type(), active: boolean("active").default(true).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull() });
+var tips = pgTable("tips", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: varchar("slug", { length: 180 }).notNull(),
   title: varchar("title", { length: 180 }).notNull(),
-  excerpt: text("excerpt"),
+  excerpt: text("excerpt").notNull(),
   content: text("content").notNull(),
-  contentType: varchar("content_type", { length: 32 }).notNull().default("article"),
-  topicId: integer("topic_id"),
-  authorId: integer("author_id"),
+  tipType: tipType("tip_type").notNull(),
+  tipTopic: varchar("tip_topic", { length: 180 }),
+  authorId: integer("author_id").notNull(),
   coverImageUrl: text("cover_image_url"),
   coverImageAlt: varchar("cover_image_alt", { length: 240 }),
   metaTitle: varchar("meta_title", { length: 180 }),
   metaDescription: varchar("meta_description", { length: 320 }),
   canonicalUrl: text("canonical_url"),
   tags: text("tags").array().notNull().default([]),
-  generationMeta: jsonb("generation_meta").$type(),
+  generationMeta: jsonb("generation_meta").$type().notNull().default({}),
   status: varchar("status", { length: 32 }).notNull().default("draft"),
   reviewStatus: varchar("review_status", { length: 32 }).notNull().default("pending"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-}, (table) => [
-  foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "articles_author_id_fkey" }),
-  foreignKey({ columns: [table.topicId], foreignColumns: [tipTopics.id], name: "articles_topic_id_fkey" })
-]);
-var articleTags = pgTable("article_tags", {
-  id: serial("id").primaryKey(),
-  articleId: uuid("article_id").notNull(),
-  tagId: integer("tag_id").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-}, (table) => [
-  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_tags_article_id_fkey" }),
-  foreignKey({ columns: [table.tagId], foreignColumns: [tags.id], name: "article_tags_tag_id_fkey" })
-]);
-var articleImages = pgTable("article_images", {
-  id: serial("id").primaryKey(),
-  articleId: uuid("article_id").notNull(),
-  imageId: uuid("image_id"),
-  imageUrl: text("image_url"),
-  altText: varchar("alt_text", { length: 240 }),
-  caption: text("caption"),
-  imageRole: varchar("image_role", { length: 40 }).notNull().default("inline"),
-  sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true })
-}, (table) => [
-  foreignKey({ columns: [table.articleId], foreignColumns: [articles.id], name: "article_images_article_id_fkey" }),
-  foreignKey({ columns: [table.imageId], foreignColumns: [images.id], name: "article_images_image_id_fkey" })
-]);
+  agentTopicSlug: varchar("agent_topic_slug", { length: 180 }),
+  agentIdempotencyKey: varchar("agent_idempotency_key", { length: 128 }),
+  agentRequestHash: varchar("agent_request_hash", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => [foreignKey({ columns: [table.authorId], foreignColumns: [authors.id], name: "tips_author_id_fkey" }), foreignKey({ columns: [table.tipTopic], foreignColumns: [tipTopics.slug], name: "tips_tip_topic_fkey" }), uniqueIndex("tips_slug_uidx").on(table.slug), uniqueIndex("tips_agent_idempotency_key_uidx").on(table.agentIdempotencyKey), uniqueIndex("tips_agent_topic_slug_uidx").on(table.agentTopicSlug), index("tips_status_published_at_idx").on(table.status, table.publishedAt.desc()), index("tips_tip_type_idx").on(table.tipType), index("tips_tip_topic_idx").on(table.tipTopic)]);
+var tipImages = pgTable("tip_images", { id: serial("id").primaryKey(), tipId: uuid("tip_id").notNull(), imageId: uuid("image_id"), imageUrl: text("image_url"), altText: varchar("alt_text", { length: 240 }), caption: text("caption"), imageRole: varchar("image_role", { length: 40 }).notNull().default("cover"), sortOrder: integer("sort_order").notNull().default(0), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() }, (table) => [foreignKey({ columns: [table.tipId], foreignColumns: [tips.id], name: "tip_images_tip_id_fkey" }), foreignKey({ columns: [table.imageId], foreignColumns: [images.id], name: "tip_images_image_id_fkey" })]);
+var tipTags = pgTable("tip_tags", { id: serial("id").primaryKey(), tipId: uuid("tip_id").notNull(), tagId: integer("tag_id").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() }, (table) => [foreignKey({ columns: [table.tipId], foreignColumns: [tips.id], name: "tip_tags_tip_id_fkey" }), foreignKey({ columns: [table.tagId], foreignColumns: [tags.id], name: "tip_tags_tag_id_fkey" }), uniqueIndex("tip_tags_tip_tag_uidx").on(table.tipId, table.tagId)]);
+var contentRelations = pgTable("content_relations", { id: serial("id").primaryKey(), recipeId: uuid("recipe_id"), tipId: uuid("tip_id"), relationType: varchar("relation_type", { length: 40 }).notNull().default("related"), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() }, (table) => [foreignKey({ columns: [table.recipeId], foreignColumns: [recipes.id], name: "content_relations_recipe_id_fkey" }), foreignKey({ columns: [table.tipId], foreignColumns: [tips.id], name: "content_relations_tip_id_fkey" })]);
+var contentReports = pgTable("content_reports", { id: serial("id").primaryKey(), recipeId: uuid("recipe_id"), tipId: uuid("tip_id"), reason: varchar("reason", { length: 40 }).notNull(), details: text("details"), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull() }, (table) => [foreignKey({ columns: [table.recipeId], foreignColumns: [recipes.id], name: "content_reports_recipe_id_fkey" }), foreignKey({ columns: [table.tipId], foreignColumns: [tips.id], name: "content_reports_tip_id_fkey" })]);
 
 // server/_core/env.ts
 var ENV = {
@@ -708,6 +612,8 @@ var recipeInputSchemaV1 = z3.object({
   excerpt: z3.string().trim().min(20).max(160),
   intro: z3.string().max(2e3).optional(),
   subcategorySlug: z3.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  authorId: z3.number().int().positive().optional(),
+  authorSlug: z3.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   secondarySubcategorySlugs: z3.array(z3.string().trim().min(1).max(120)).max(2).default([]),
   prepTimeMin: z3.number().int().min(1).max(1440),
   cookTimeMin: z3.number().int().min(0).max(1440).default(0),
@@ -845,6 +751,7 @@ async function insertRecipe(input, agent) {
     category: input.category,
     subcategory: input.subcategory ?? null,
     subcategorySlug: input.subcategorySlug ?? null,
+    authorId: input.authorId ?? null,
     tags: input.tags,
     coverImageUrl: input.coverImageUrl,
     coverImageAlt: input.coverImageAlt,
@@ -869,6 +776,12 @@ async function insertRecipe(input, agent) {
     updatedAt: now
   }).returning();
   return row;
+}
+async function resolveAuthorId(id, slug) {
+  const db = requireDb(await getDb());
+  const rows = id ? await db.select({ id: authors.id }).from(authors).where(and(eq2(authors.id, id), eq2(authors.active, true))).limit(1) : slug ? await db.select({ id: authors.id }).from(authors).where(and(eq2(authors.slug, slug), eq2(authors.active, true))).limit(1) : [];
+  if (!rows[0]) throw new Error("Autor da receita n\xE3o encontrado ou n\xE3o informado");
+  return rows[0].id;
 }
 async function getAgentRecipeByIdempotencyKey(key2) {
   const db = requireDb(await getDb());
@@ -1322,8 +1235,8 @@ async function processAgentCover(cover, slug) {
       resized.clone().avif({ quality: 55, effort: 4 }).toBuffer()
     ]);
     const [webpObject, avifObject] = await Promise.all([
-      storagePutPublic(`articles/${slug}-${width}.webp`, webp, "image/webp"),
-      storagePutPublic(`articles/${slug}-${width}.avif`, avif, "image/avif")
+      storagePutPublic(`tips/${slug}-${width}.webp`, webp, "image/webp"),
+      storagePutPublic(`tips/${slug}-${width}.avif`, avif, "image/avif")
     ]);
     variants[`w${width}`] = webpObject.url;
     variants[`avif${width}`] = avifObject.url;
@@ -1459,15 +1372,15 @@ async function createV1Recipe(req, res) {
       return;
     }
     if (!publishingAllowed(scope, clean.status, res)) return;
-    const dayStart = saoPauloDayStart();
-    const cap2 = clean.status === "published" ? configuredCap("AGENT_DAILY_CAP_RECIPES", 1) : configuredCap("AGENT_DAILY_CAP_DRAFTS", 3);
-    if (cap2 === null) {
+    const dayStart2 = saoPauloDayStart();
+    const cap = clean.status === "published" ? configuredCap("AGENT_DAILY_CAP_RECIPES", 1) : configuredCap("AGENT_DAILY_CAP_DRAFTS", 3);
+    if (cap === null) {
       agentError(res, 503, "invalid_configuration", "O limite di\xE1rio de conte\xFAdo est\xE1 inv\xE1lido.");
       return;
     }
-    const count3 = await countAgentRecipesSince(clean.status, dayStart);
-    if (count3 >= cap2) {
-      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((dayStart.getTime() + 864e5 - Date.now()) / 1e3))));
+    const count3 = await countAgentRecipesSince(clean.status, dayStart2);
+    if (count3 >= cap) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((dayStart2.getTime() + 864e5 - Date.now()) / 1e3))));
       agentError(res, 429, "daily_cap_reached", "O limite di\xE1rio de receitas foi atingido.");
       return;
     }
@@ -1501,6 +1414,10 @@ async function createV1Recipe(req, res) {
         cover: image.source
       }
     };
+    if (!clean.authorId && !clean.authorSlug) {
+      agentError(res, 422, "author_required", "A receita precisa de um autor resolvido pela regra editorial.");
+      return;
+    }
     const recipe = await insertRecipe({
       slug,
       title: clean.title,
@@ -1508,6 +1425,7 @@ async function createV1Recipe(req, res) {
       category: taxonomy.category,
       subcategory: taxonomy.subcategory,
       subcategorySlug: clean.subcategorySlug,
+      authorId: await resolveAuthorId(clean.authorId, clean.authorSlug),
       tags: clean.tags,
       coverImageUrl: image.url,
       coverImageAlt: clean.coverImageAlt,
@@ -1679,417 +1597,232 @@ function createRecipesRouter() {
   return router2;
 }
 
-// server/articlesRoutes.ts
+// server/tipsRoutes.ts
 import express2 from "express";
 
-// shared/articles.ts
+// shared/tips.ts
 import { z as z5 } from "zod";
-var ARTICLE_TYPES = ["article", "tip", "technique", "news"];
+var TIP_TYPES = ["dica", "tecnica", "materia"];
 var TIP_TOPICS = [
-  { slug: "montagem-e-apresentacao", name: "Montagem e apresenta\xE7\xE3o", riskLevel: "low" },
-  { slug: "ornamentacao", name: "Ornamenta\xE7\xE3o", riskLevel: "low" },
-  { slug: "preparo", name: "Preparo", riskLevel: "medium" },
-  { slug: "equipamentos-uso", name: "Uso de equipamentos", riskLevel: "medium" },
-  { slug: "equipamentos-compra", name: "Escolha de equipamentos", riskLevel: "medium" },
-  { slug: "negocios", name: "Neg\xF3cios na culin\xE1ria", riskLevel: "medium" }
+  { slug: "montagem-e-apresentacao", name: "Montagem e apresenta\xE7\xE3o", description: "Acabamento, embalagem e apresenta\xE7\xE3o de doces.", sortOrder: 1 },
+  { slug: "ornamentacao", name: "Ornamenta\xE7\xE3o", description: "Decora\xE7\xE3o, coberturas e acabamento.", sortOrder: 2 },
+  { slug: "preparo", name: "Preparo", description: "T\xE9cnicas, ponto e corre\xE7\xE3o de preparo.", sortOrder: 3 },
+  { slug: "equipamentos-uso", name: "Uso de equipamentos", description: "Uso, limpeza e manuten\xE7\xE3o.", sortOrder: 4 },
+  { slug: "equipamentos-compra", name: "Escolha de equipamentos", description: "Crit\xE9rios para escolher equipamentos.", sortOrder: 5 },
+  { slug: "negocios", name: "Neg\xF3cios na culin\xE1ria", description: "Organiza\xE7\xE3o e opera\xE7\xE3o de neg\xF3cios de doces.", sortOrder: 6 }
 ];
-var articleSourceSchema = z5.object({ name: z5.string().trim().min(1).max(200), title: z5.string().trim().min(1).max(300), url: z5.string().url().max(2048) });
-var coverStockSchema = z5.object({ mode: z5.literal("stock"), provider: z5.string().trim().min(1).max(40), sourceImageUrl: z5.string().url().max(2048).refine((value) => value.startsWith("https://")), sourcePageUrl: z5.string().url().max(2048).refine((value) => value.startsWith("https://")), author: z5.string().max(200), license: z5.string().trim().min(1).max(120), attributionText: z5.string().max(400) });
-var coverGenerateSchema = z5.object({ mode: z5.literal("generate"), imagePrompt: z5.string().trim().min(1).max(2e3) });
-var articleInputSchema = z5.object({
-  type: z5.enum(ARTICLE_TYPES),
+var coverStock = z5.object({ mode: z5.literal("stock"), provider: z5.string().trim().min(1).max(40), sourceImageUrl: z5.string().url().refine((v) => v.startsWith("https://")), sourcePageUrl: z5.string().url().refine((v) => v.startsWith("https://")), author: z5.string().max(200), license: z5.string().trim().min(1).max(120), attributionText: z5.string().max(400) });
+var coverGenerate = z5.object({ mode: z5.literal("generate"), imagePrompt: z5.string().trim().min(1).max(2e3) });
+var tipInputSchema = z5.object({
+  type: z5.enum(TIP_TYPES),
   title: z5.string().trim().min(5).max(180),
   slug: z5.string().trim().min(3).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   excerpt: z5.string().trim().min(20).max(160),
-  categorySlug: z5.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
-  tipTopic: z5.string().trim().min(1).max(60).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   bodyMd: z5.string().trim().min(1).max(3e4),
+  tipTopic: z5.string().trim().min(1).max(60).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  authorId: z5.number().int().positive().optional(),
+  authorSlug: z5.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   structured: z5.record(z5.string(), z5.unknown()).optional(),
-  sources: z5.array(articleSourceSchema).max(20).default([]),
+  sources: z5.array(z5.object({ name: z5.string().min(1).max(200), title: z5.string().min(1).max(300), url: z5.string().url() })).max(20).default([]),
+  cover: z5.discriminatedUnion("mode", [coverStock, coverGenerate]),
+  coverImageAlt: z5.string().trim().min(8).max(240),
   tags: z5.array(z5.string().trim().min(1).max(40)).max(12).default([]),
   relatedTopics: z5.array(z5.string().trim().min(1).max(120)).max(6).default([]),
-  cover: z5.discriminatedUnion("mode", [coverStockSchema, coverGenerateSchema]),
-  coverImageAlt: z5.string().trim().min(8).max(240),
+  metaTitle: z5.string().trim().max(180).optional(),
+  metaDescription: z5.string().trim().max(320).optional(),
+  canonicalUrl: z5.string().url().optional(),
   status: z5.enum(["draft", "published"]).default("draft"),
   aiModel: z5.string().trim().min(1).max(120),
   generationMeta: z5.record(z5.string(), z5.unknown())
-}).superRefine((article, ctx) => {
-  if (article.type === "tip" && !article.tipTopic) ctx.addIssue({ code: "custom", path: ["tipTopic"], message: "Dica exige tipTopic." });
-  if (article.type !== "tip" && article.tipTopic) ctx.addIssue({ code: "custom", path: ["tipTopic"], message: "tipTopic s\xF3 pode ser usado em dicas." });
-  if (article.type !== "tip" && article.sources.length === 0) ctx.addIssue({ code: "custom", path: ["sources"], message: "Conte\xFAdo n\xE3o promocional exige fontes." });
-  if (article.relatedTopics.length === 1) ctx.addIssue({ code: "custom", path: ["relatedTopics"], message: "Informe ao menos dois temas relacionados." });
-  if (new Set(article.tags).size !== article.tags.length) ctx.addIssue({ code: "custom", path: ["tags"], message: "Tags repetidas." });
+}).superRefine((value, ctx) => {
+  if (value.type === "dica" && !value.tipTopic) ctx.addIssue({ code: "custom", path: ["tipTopic"], message: "Dica exige t\xF3pico." });
+  if (new Set(value.tags).size !== value.tags.length) ctx.addIssue({ code: "custom", path: ["tags"], message: "Tags repetidas." });
 });
 
-// server/articlesDb.ts
-import { and as and2, count as count2, desc as desc2, eq as eq3, gte as gte2, isNotNull as isNotNull2, or as or2, sql as sql2 } from "drizzle-orm";
-function requireDb2(db) {
+// server/tipsDb.ts
+import { and as and2, count as count2, desc as desc2, eq as eq3, gte as gte2, isNotNull as isNotNull2, sql as sql2 } from "drizzle-orm";
+function dbOrThrow(db) {
   if (!db) throw new Error("A base de dados n\xE3o est\xE1 configurada");
   return db;
 }
-function configuredAuthorId() {
-  const id = Number(process.env.AGENT_AUTHOR_ID ?? "");
-  if (!Number.isInteger(id) || id <= 0) throw new Error("AGENT_AUTHOR_ID inv\xE1lido");
-  return id;
-}
-async function lookupId(tx, table, slug, label) {
-  const rows = await tx.select({ id: table.id }).from(table).where(eq3(table.slug, slug)).limit(1);
-  if (!rows[0]) throw new Error(`${label} n\xE3o encontrada: ${slug}`);
+async function authorId(tx, input) {
+  if (input.authorId) return input.authorId;
+  if (!input.authorSlug) throw new Error("Autor n\xE3o informado");
+  const rows = await tx.select({ id: authors.id }).from(authors).where(and2(eq3(authors.slug, input.authorSlug), eq3(authors.active, true))).limit(1);
+  if (!rows[0]) throw new Error("Autor n\xE3o encontrado ou inativo");
   return rows[0].id;
 }
-async function insertArticle(input, cover, agent) {
-  const db = requireDb2(await getDb());
+async function insertTip(input, cover, agent) {
+  const db = dbOrThrow(await getDb());
   const now = /* @__PURE__ */ new Date();
   return db.transaction(async (tx) => {
-    const authorId = configuredAuthorId();
-    const author = await tx.select({ id: authors.id }).from(authors).where(and2(eq3(authors.id, authorId), eq3(authors.active, true))).limit(1);
-    if (!author[0]) throw new Error("Autor configurado n\xE3o encontrado ou inativo");
-    const topicId = input.tipTopic ? await lookupId(tx, tipTopics, input.tipTopic, "Tema") : null;
-    if (input.categorySlug) await lookupId(tx, categories, input.categorySlug, "Categoria");
-    const generationMeta = {
-      ...input.generationMeta,
-      sources: input.sources,
-      related_topics: input.relatedTopics,
-      ai_model: input.aiModel,
-      category_slug: input.categorySlug ?? null,
-      cover: { source: cover.source, variants: cover.variants, is_ai: cover.isAi },
-      agent_topic_slug: agent.topicSlug,
-      agent_idempotency_key: agent.idempotencyKey,
-      agent_request_hash: agent.requestHash
-    };
-    const [row] = await tx.insert(articles).values({
-      slug: input.slug,
-      title: input.title,
-      excerpt: input.excerpt,
-      content: input.bodyMd,
-      contentType: input.type,
-      topicId,
-      authorId,
-      coverImageUrl: cover.url,
-      coverImageAlt: input.coverImageAlt,
-      tags: input.tags,
-      generationMeta,
-      status: input.status ?? "draft",
-      reviewStatus: input.status === "published" ? "approved" : "pending",
-      publishedAt: input.status === "published" ? now : null,
-      createdAt: now,
-      updatedAt: now
-    }).returning();
-    const [image] = await tx.insert(images).values({ fileUrl: cover.url, altText: input.coverImageAlt, imageType: "article-cover", sourceType: cover.isAi ? "generated" : "stock", generationMeta: { source: cover.source, variants: cover.variants }, active: true, createdAt: now, updatedAt: now }).returning();
-    await tx.insert(articleImages).values({ articleId: row.id, imageId: image.id, imageUrl: cover.url, altText: input.coverImageAlt, imageRole: "cover", sortOrder: 0, createdAt: now });
+    const resolvedAuthorId = await authorId(tx, input);
+    const topic = await tx.select({ slug: tipTopics.slug }).from(tipTopics).where(and2(eq3(tipTopics.slug, input.tipTopic), eq3(tipTopics.active, true))).limit(1);
+    if (!topic[0]) throw new Error(`T\xF3pico n\xE3o encontrado: ${input.tipTopic}`);
+    const generationMeta = { ...input.generationMeta, structured: input.structured ?? null, sources: input.sources, related_topics: input.relatedTopics, cover: { source: cover.source, variants: cover.variants, is_ai: cover.isAi }, agent_topic_slug: agent.topicSlug, agent_idempotency_key: agent.idempotencyKey, agent_request_hash: agent.requestHash };
+    const [row] = await tx.insert(tips).values({ slug: input.slug, title: input.title, excerpt: input.excerpt, content: input.bodyMd, tipType: input.type, tipTopic: input.tipTopic, authorId: resolvedAuthorId, coverImageUrl: cover.url, coverImageAlt: input.coverImageAlt, metaTitle: input.metaTitle ?? input.title, metaDescription: input.metaDescription ?? input.excerpt, canonicalUrl: input.canonicalUrl ?? null, tags: input.tags, generationMeta, status: input.status, reviewStatus: input.status === "published" ? "approved" : "pending", publishedAt: input.status === "published" ? now : null, agentTopicSlug: agent.topicSlug, agentIdempotencyKey: agent.idempotencyKey, agentRequestHash: agent.requestHash, createdAt: now, updatedAt: now }).returning();
+    const [image] = await tx.insert(images).values({ fileUrl: cover.url, altText: input.coverImageAlt, imageType: "tip-cover", sourceType: cover.isAi ? "generated" : "stock", generationMeta: { source: cover.source, variants: cover.variants }, active: true, createdAt: now, updatedAt: now }).returning();
+    await tx.insert(tipImages).values({ tipId: row.id, imageId: image.id, imageUrl: cover.url, altText: input.coverImageAlt, imageRole: "cover", sortOrder: 0, createdAt: now });
     if (input.tags.length) {
-      const tagRows = await tx.select({ id: tags.id }).from(tags).where(or2(...input.tags.map((value) => or2(eq3(tags.slug, value), eq3(tags.name, value)))));
-      if (tagRows.length !== input.tags.length) throw new Error("Uma ou mais tags n\xE3o foram encontradas");
-      await tx.insert(articleTags).values(tagRows.map((tag) => ({ articleId: row.id, tagId: tag.id, createdAt: now })));
+      const rows = await tx.select({ id: tags.id }).from(tags).where(sql2`${tags.slug} = ANY(${input.tags})`);
+      if (rows.length !== input.tags.length) throw new Error("Uma ou mais tags n\xE3o foram encontradas");
+      await tx.insert(tipTags).values(rows.map((tag) => ({ tipId: row.id, tagId: tag.id, createdAt: now })));
     }
     return row;
   });
 }
-var generationValue = (key2, value) => sql2`${articles.generationMeta}->>${key2} = ${value}`;
-async function listPublishedArticles(limit = 24) {
-  const db = requireDb2(await getDb());
-  return db.select({
-    id: articles.id,
-    type: articles.contentType,
-    slug: articles.slug,
-    title: articles.title,
-    excerpt: articles.excerpt,
-    tipTopic: tipTopics.slug,
-    coverImageUrl: articles.coverImageUrl,
-    coverImageAlt: articles.coverImageAlt,
-    coverImageVariants: sql2`coalesce(${articles.generationMeta}->'cover'->'variants', '{}'::jsonb)`,
-    status: articles.status,
-    publishedAt: articles.publishedAt,
-    updatedAt: articles.updatedAt
-  }).from(articles).leftJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(and2(eq3(articles.status, "published"), isNotNull2(articles.publishedAt))).orderBy(desc2(articles.publishedAt), desc2(articles.id)).limit(limit);
+async function getTipByIdempotencyKey(key2) {
+  const db = dbOrThrow(await getDb());
+  const rows = await db.select().from(tips).where(eq3(tips.agentIdempotencyKey, key2)).limit(1);
+  return rows[0] ?? null;
 }
-async function getPublishedArticleSlugs() {
-  const db = requireDb2(await getDb());
-  return db.select({ slug: articles.slug, updatedAt: articles.updatedAt }).from(articles).where(and2(eq3(articles.status, "published"), isNotNull2(articles.publishedAt))).orderBy(desc2(articles.publishedAt));
+async function getTipByTopicSlug(key2) {
+  const db = dbOrThrow(await getDb());
+  const rows = await db.select().from(tips).where(eq3(tips.agentTopicSlug, key2)).limit(1);
+  return rows[0] ?? null;
 }
-async function getPublishedArticleBySlug(slug) {
-  const db = requireDb2(await getDb());
-  const rows = await db.select({ article: articles, tipTopic: tipTopics.slug }).from(articles).leftJoin(tipTopics, eq3(articles.topicId, tipTopics.id)).where(and2(eq3(articles.slug, slug), eq3(articles.status, "published"))).limit(1);
+async function getTipBySlug(slug) {
+  const db = dbOrThrow(await getDb());
+  const rows = await db.select().from(tips).where(eq3(tips.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+async function listPublishedTips(limit = 24) {
+  const db = dbOrThrow(await getDb());
+  return db.select({ id: tips.id, type: tips.tipType, slug: tips.slug, title: tips.title, excerpt: tips.excerpt, tipTopic: tips.tipTopic, authorId: tips.authorId, authorName: authors.name, coverImageUrl: tips.coverImageUrl, coverImageAlt: tips.coverImageAlt, publishedAt: tips.publishedAt, updatedAt: tips.updatedAt }).from(tips).leftJoin(authors, eq3(tips.authorId, authors.id)).where(and2(eq3(tips.status, "published"), isNotNull2(tips.publishedAt))).orderBy(desc2(tips.publishedAt), desc2(tips.id)).limit(limit);
+}
+async function getPublishedTipBySlug(slug) {
+  const db = dbOrThrow(await getDb());
+  const rows = await db.select({ tip: tips, authorName: authors.name }).from(tips).leftJoin(authors, eq3(tips.authorId, authors.id)).where(and2(eq3(tips.slug, slug), eq3(tips.status, "published"))).limit(1);
   if (!rows[0]) return null;
-  const meta = rows[0].article.generationMeta ?? {};
-  return {
-    ...rows[0].article,
-    type: rows[0].article.contentType,
-    bodyMd: rows[0].article.content,
-    excerpt: rows[0].article.excerpt ?? "",
-    tipTopic: rows[0].tipTopic,
-    structured: meta.structured ?? null,
-    sources: meta.sources ?? [],
-    relatedTopics: meta.related_topics ?? [],
-    coverImageVariants: meta.cover?.variants ?? {},
-    coverImageSource: meta.cover?.source ?? null,
-    coverImageIsAi: Boolean(meta.cover?.is_ai)
-  };
+  const meta = rows[0].tip.generationMeta ?? {};
+  return { ...rows[0].tip, bodyMd: rows[0].tip.content, relatedTopics: meta.related_topics ?? [], sources: meta.sources ?? [], coverImageVariants: meta.cover?.variants ?? {}, coverImageSource: meta.cover?.source ?? null, coverImageIsAi: Boolean(meta.cover?.is_ai), authorName: rows[0].authorName };
 }
-async function getArticleByIdempotencyKey(key2) {
-  const db = requireDb2(await getDb());
-  const rows = await db.select().from(articles).where(generationValue("agent_idempotency_key", key2)).limit(1);
-  return rows[0] ?? null;
-}
-async function getArticleByTopicSlug(topicSlug) {
-  const db = requireDb2(await getDb());
-  const rows = await db.select().from(articles).where(generationValue("agent_topic_slug", topicSlug)).limit(1);
-  return rows[0] ?? null;
-}
-var getAgentArticleByTopicSlug = getArticleByTopicSlug;
-async function countPublishedTipsSince(since) {
-  const db = requireDb2(await getDb());
-  const rows = await db.select({ value: count2() }).from(articles).where(and2(eq3(articles.contentType, "tip"), eq3(articles.status, "published"), gte2(articles.publishedAt, since)));
-  return Number(rows[0]?.value ?? 0);
-}
-async function countAgentArticlesSince(status, since) {
-  const db = requireDb2(await getDb());
-  const rows = await db.select({ value: count2() }).from(articles).where(and2(eq3(articles.status, status), gte2(status === "draft" ? articles.createdAt : articles.publishedAt, since)));
+async function countTipsSince(status, since) {
+  const db = dbOrThrow(await getDb());
+  const rows = await db.select({ value: count2() }).from(tips).where(and2(eq3(tips.status, status), gte2(status === "draft" ? tips.createdAt : tips.publishedAt, since)));
   return Number(rows[0]?.value ?? 0);
 }
 
-// server/articlesRoutes.ts
-var PHASE_RISKS = {
-  0: /* @__PURE__ */ new Set(["low"]),
-  1: /* @__PURE__ */ new Set(["low"]),
-  2: /* @__PURE__ */ new Set(["low", "medium"]),
-  3: /* @__PURE__ */ new Set(["low", "medium", "high"])
-};
-var ARTICLE_RISK = {
-  "montagem-e-apresentacao": "low",
-  ornamentacao: "low",
-  preparo: "medium",
-  "equipamentos-uso": "medium",
-  "equipamentos-compra": "medium",
-  negocios: "medium"
-};
-var BLOCKED_TIP_CLAIMS = /\b(?:marca|modelo|loja|pre[cç]o|lucro|faturamento|garantido|infal[ií]vel|cura|emagrece|detox|testamos|testada)\b/i;
-var SAFETY_TERMS = /\b(?:conserva[cç][aã]o|seguran[cç]a|temperatura|validade|armazenar|armazenamento)\b/i;
-function saoPauloDayStart2() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(/* @__PURE__ */ new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day), 3));
+// server/tipsRoutes.ts
+var PUBLIC_CACHE2 = "public, s-maxage=60, stale-while-revalidate=300";
+function cachePublic2(res) {
+  res.setHeader("Cache-Control", PUBLIC_CACHE2);
 }
-function cap(name, fallback) {
-  const raw = process.env[name];
-  if (raw === void 0 || raw.trim() === "") return fallback;
-  const value = Number(raw);
-  return Number.isInteger(value) && value >= 0 ? value : null;
+function sanitize(value) {
+  if (typeof value === "string") return value.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
+  if (Array.isArray(value)) return value.map(sanitize);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, sanitize(v)]));
+  return value;
 }
-function allowedRisk(topic, phase) {
-  return Boolean(PHASE_RISKS[phase]?.has(ARTICLE_RISK[topic]));
+function dayStart() {
+  const d = /* @__PURE__ */ new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
-function articleUrl(slug) {
-  const base2 = (process.env.SITE_PUBLIC_URL ?? "https://www.chocolicia.site").replace(/\/$/, "");
-  return `${base2}/dicas/${encodeURIComponent(slug)}`;
+async function createTip(req, res) {
+  requestId(req, res);
+  if (!requireV1(req, res) || !agentTokensConfigured()) return;
+  const scope = resolveAgentScope(req);
+  if (!scope) {
+    agentError(res, 401, "unauthorized", "N\xE3o autorizado.");
+    return;
+  }
+  const key2 = req.header("idempotency-key")?.trim() ?? "";
+  if (!/^[a-f0-9]{64}$/i.test(key2)) {
+    agentError(res, 400, "idempotency_key_required", "Idempotency-Key deve conter um SHA-256 hexadecimal.");
+    return;
+  }
+  const parsed = tipInputSchema.safeParse(sanitize(req.body));
+  if (!parsed.success) {
+    agentError(res, 400, "validation_failed", "Conte\xFAdo educativo inv\xE1lido.", parsed.error.issues.map((i) => ({ field: i.path.join("."), issue: i.message })));
+    return;
+  }
+  const input = parsed.data;
+  if ((input.type === "tecnica" || input.type === "materia") && input.status === "published") {
+    agentError(res, 422, "review_required", "T\xE9cnicas e mat\xE9rias devem entrar como rascunho para revis\xE3o.");
+    return;
+  }
+  if (input.status === "published" && input.type !== "dica") {
+    agentError(res, 422, "review_required", "Este tipo de conte\xFAdo exige revis\xE3o editorial.");
+    return;
+  }
+  if (!publishingAllowed(scope, input.status, res)) return;
+  const requestHash = hashRequest(input);
+  try {
+    const prior = await getTipByIdempotencyKey(key2);
+    if (prior) {
+      if (prior.agentRequestHash !== requestHash) {
+        agentError(res, 422, "idempotency_key_reuse", "A mesma chave foi usada com outro conte\xFAdo.");
+        return;
+      }
+      res.setHeader("Idempotent-Replay", "true");
+      res.status(201).json({ id: prior.id, slug: prior.slug, status: prior.status, url: `${req.protocol}://${req.get("host")}/dicas/${encodeURIComponent(prior.slug)}` });
+      return;
+    }
+    const topicSlug = String(input.generationMeta.topic_slug ?? input.tipTopic);
+    const runId = String(input.generationMeta.run_id ?? "");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topicSlug) || !runId) {
+      agentError(res, 400, "validation_failed", "generationMeta precisa conter run_id e topic_slug v\xE1lidos.");
+      return;
+    }
+    if (!TIP_TOPICS.some((topic) => topic.slug === input.tipTopic)) {
+      agentError(res, 422, "topic_not_enabled", "O t\xF3pico n\xE3o est\xE1 habilitado para recebimento.");
+      return;
+    }
+    const existing = await getTipByTopicSlug(topicSlug);
+    if (existing) {
+      agentError(res, 409, "topic_exists", "J\xE1 existe conte\xFAdo para esta pauta.");
+      return;
+    }
+    const slug = input.slug ?? toSlug(input.title);
+    const dailyCap = input.status === "published" ? Number(process.env.AGENT_DAILY_CAP_TIPS ?? 1) : Number(process.env.AGENT_DAILY_CAP_DRAFTS ?? 3);
+    if (!Number.isInteger(dailyCap) || dailyCap < 0) {
+      agentError(res, 503, "invalid_configuration", "O limite di\xE1rio est\xE1 inv\xE1lido.");
+      return;
+    }
+    if (await countTipsSince(input.status, dayStart()) >= dailyCap) {
+      agentError(res, 429, "daily_cap_reached", "O limite di\xE1rio de conte\xFAdos foi atingido.");
+      return;
+    }
+    const cover = await processAgentCover(input.cover, slug);
+    const row = await insertTip({ ...input, slug }, cover, { topicSlug, idempotencyKey: key2, requestHash });
+    res.status(201).json({ id: row.id, slug: row.slug, status: row.status, url: `${req.protocol}://${req.get("host")}/dicas/${encodeURIComponent(row.slug)}` });
+  } catch (error) {
+    if (error.code === "23505") {
+      agentError(res, 409, "duplicate_content", "J\xE1 existe conte\xFAdo com esta chave, pauta ou slug.");
+      return;
+    }
+    console.error("[Tips] create failed:", error instanceof Error ? error.name : "UnknownError", res.getHeader("X-Request-Id"));
+    agentError(res, 503, "server_error", "N\xE3o foi poss\xEDvel guardar o conte\xFAdo educativo.");
+  }
 }
-function createArticlesRouter() {
+function createTipsRouter() {
   const router2 = express2.Router();
   router2.get("/topics", (_req, res) => {
-    const phase = Number(process.env.AGENT_PHASE ?? "0");
-    const allowed = PHASE_RISKS[phase] ?? PHASE_RISKS[0];
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.json({
-      items: TIP_TOPICS.map((topic) => ({
-        slug: topic.slug,
-        name: topic.name,
-        riskLevel: topic.riskLevel,
-        active: true,
-        agentEnabled: allowed.has(topic.riskLevel)
-      }))
-    });
+    cachePublic2(res);
+    res.json(TIP_TOPICS);
   });
-  router2.get("/coverage", (req, res) => {
-    if (!agentTokensConfigured()) {
-      agentError(res, 503, "agent_auth_not_configured", "A autentica\xE7\xE3o do agente n\xE3o est\xE1 configurada.");
-      return;
-    }
-    if (!resolveAgentScope(req)) {
-      agentError(res, 401, "unauthorized", "N\xE3o autorizado.");
-      return;
-    }
-    countPublishedTipsSince(new Date(Date.now() - 7 * 24 * 60 * 60 * 1e3)).then((publishedTipsThisWeek) => res.setHeader("Cache-Control", "no-store").json({ publishedTipsThisWeek })).catch((error) => {
-      console.error("[Articles] coverage failed:", error instanceof Error ? error.name : "UnknownError");
-      agentError(res, 503, "server_error", "N\xE3o foi poss\xEDvel consultar a cad\xEAncia.");
-    });
-  });
-  router2.get("/", async (_req, res) => {
+  router2.get("/", async (req, res) => {
     try {
-      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
-      res.json({ items: await listPublishedArticles(24) });
-    } catch (error) {
-      console.error("[Articles] list failed:", error instanceof Error ? error.name : "UnknownError");
-      res.status(503).json({ error: { code: "server_error", message: "N\xE3o foi poss\xEDvel carregar as dicas." } });
+      const limit = Math.min(48, Math.max(1, Number(req.query.limit ?? 24)));
+      cachePublic2(res);
+      res.json({ items: await listPublishedTips(limit) });
+    } catch {
+      res.status(503).json({ error: "N\xE3o foi poss\xEDvel carregar as dicas." });
     }
   });
-  router2.post("/", async (req, res) => {
-    requestId(req, res);
-    if (!requireV1(req, res)) return;
-    if (!agentTokensConfigured()) {
-      agentError(res, 503, "agent_auth_not_configured", "A autentica\xE7\xE3o do agente n\xE3o est\xE1 configurada.");
-      return;
-    }
-    const scope = resolveAgentScope(req);
-    if (!scope) {
-      agentError(res, 401, "unauthorized", "N\xE3o autorizado.");
-      return;
-    }
-    const idempotencyKey = req.header("idempotency-key")?.trim() ?? "";
-    if (!/^[a-f0-9]{64}$/i.test(idempotencyKey)) {
-      agentError(res, 400, "idempotency_key_required", "Idempotency-Key deve conter um SHA-256 hexadecimal.");
-      return;
-    }
-    const contentLength = Number(req.header("content-length") ?? 0);
-    if (Math.max(contentLength, Buffer.byteLength(JSON.stringify(req.body ?? {}), "utf8")) > 1e6) {
-      agentError(res, 413, "payload_too_large", "O conte\xFAdo excede o limite permitido.");
-      return;
-    }
-    const parsed = articleInputSchema.safeParse(req.body);
-    if (!parsed.success) {
-      agentError(res, 400, "validation_failed", "Artigo inv\xE1lido.", parsed.error.issues.map((issue) => ({
-        field: issue.path.join("."),
-        issue: issue.message
-      })));
-      return;
-    }
-    const clean = parsed.data;
-    const requestHash = hashRequest(clean);
-    try {
-      const prior = await getArticleByIdempotencyKey(idempotencyKey);
-      if (prior) {
-        const priorRequestHash = typeof prior.generationMeta?.agent_request_hash === "string" ? prior.generationMeta.agent_request_hash : null;
-        if (priorRequestHash !== requestHash) {
-          agentError(res, 422, "idempotency_key_reuse", "A mesma chave foi usada com outro conte\xFAdo.");
-          return;
-        }
-        res.setHeader("Idempotent-Replay", "true");
-        res.status(201).json({ id: prior.id, slug: prior.slug, status: prior.status, url: articleUrl(prior.slug) });
-        return;
-      }
-      const meta = clean.generationMeta;
-      const topicSlug = String(meta.topic_slug ?? "");
-      const runId = String(meta.run_id ?? "");
-      const phase = Number(process.env.AGENT_PHASE ?? "0");
-      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topicSlug) || !runId) {
-        agentError(res, 400, "validation_failed", "generationMeta precisa conter run_id e topic_slug v\xE1lidos.");
-        return;
-      }
-      if (clean.type !== "tip" || !clean.tipTopic || !TIP_TOPICS.some((topic) => topic.slug === clean.tipTopic)) {
-        agentError(res, 422, "topic_not_enabled", "Somente assuntos de dica habilitados podem ser recebidos nesta fase.");
-        return;
-      }
-      if (!allowedRisk(clean.tipTopic, phase)) {
-        agentError(res, 422, "topic_not_enabled", "O n\xEDvel de risco do assunto n\xE3o \xE9 permitido na fase atual.");
-        return;
-      }
-      if (clean.categorySlug) {
-        agentError(res, 422, "category_not_enabled", "A categoria de dica n\xE3o est\xE1 habilitada.");
-        return;
-      }
-      if (!publishingAllowed(scope, clean.status, res)) return;
-      const words = clean.bodyMd.match(/[A-Za-zÀ-ÿ0-9]+/g)?.length ?? 0;
-      if (words < 150 || words > 400 || /<\/?[a-z][^>]*>/i.test(clean.bodyMd) || BLOCKED_TIP_CLAIMS.test(clean.bodyMd)) {
-        agentError(res, 422, "content_rejected", "A dica n\xE3o passou pelas regras editoriais de tamanho e alega\xE7\xF5es.");
-        return;
-      }
-      const domains = new Set(clean.sources.map((source) => {
-        try {
-          return new URL(source.url).hostname.toLowerCase();
-        } catch {
-          return "";
-        }
-      }).filter(Boolean));
-      if (domains.size < 2) {
-        agentError(res, 422, "sources_insufficient", "A dica precisa de fontes em dois dom\xEDnios distintos.");
-        return;
-      }
-      if (SAFETY_TERMS.test(clean.bodyMd)) {
-        agentError(res, 422, "technical_source_required", "A base de fontes t\xE9cnicas e oficiais ainda n\xE3o foi aprovada.");
-        return;
-      }
-      if (clean.type === "tip" && ["equipamentos-compra", "equipamentos-uso", "negocios"].includes(clean.tipTopic) && BLOCKED_TIP_CLAIMS.test(clean.bodyMd)) {
-        agentError(res, 422, "content_rejected", "A dica viola as restri\xE7\xF5es do assunto.");
-        return;
-      }
-      const approvedModels = (process.env.AGENT_APPROVED_MODELS ?? "").split(",").map((item) => item.trim()).filter(Boolean);
-      if (clean.status === "published" && (!approvedModels.length || !approvedModels.includes(clean.aiModel))) {
-        agentError(res, 403, "model_not_approved", "O modelo informado n\xE3o est\xE1 aprovado para publica\xE7\xE3o.");
-        return;
-      }
-      const dayStart = saoPauloDayStart2();
-      const draftCap = cap("AGENT_DAILY_CAP_DRAFTS", 3);
-      const articleCap = cap("AGENT_DAILY_CAP_ARTICLES", 2);
-      if (draftCap === null || articleCap === null) {
-        agentError(res, 503, "invalid_configuration", "O limite de artigos est\xE1 inv\xE1lido.");
-        return;
-      }
-      if (clean.status === "draft" && await countAgentArticlesSince("draft", dayStart) >= draftCap) {
-        agentError(res, 429, "daily_cap_reached", "O limite di\xE1rio de rascunhos foi atingido.");
-        return;
-      }
-      if (clean.status === "published" && (await countAgentArticlesSince("published", dayStart) >= articleCap || await countPublishedTipsSince(new Date(Date.now() - 7 * 24 * 60 * 60 * 1e3)) >= 2)) {
-        agentError(res, 429, "daily_cap_reached", "O limite de publica\xE7\xE3o de dicas foi atingido.");
-        return;
-      }
-      if (await getArticleByTopicSlug(topicSlug)) {
-        agentError(res, 409, "topic_exists", "J\xE1 existe conte\xFAdo para esta pauta.");
-        return;
-      }
-      const slug = clean.slug ?? toSlug(clean.title);
-      if (!slug) {
-        agentError(res, 400, "validation_failed", "N\xE3o foi poss\xEDvel gerar o slug do artigo.");
-        return;
-      }
-      let cover;
-      try {
-        cover = await processAgentCover(clean.cover, slug);
-      } catch (error) {
-        console.error("[Articles] image processing failed:", error instanceof Error ? error.name : "UnknownError", res.getHeader("X-Request-Id"));
-        agentError(res, 422, "image_processing_failed", "A imagem n\xE3o p\xF4de ser validada e armazenada.");
-        return;
-      }
-      const article = await insertArticle({ ...clean, slug }, cover, { topicSlug, idempotencyKey, requestHash });
-      res.status(201).json({ id: article.id, slug: article.slug, status: article.status, url: articleUrl(article.slug) });
-    } catch (error) {
-      const dbError = error;
-      if (dbError.code === "23505") {
-        agentError(res, 409, "topic_exists", "J\xE1 existe conte\xFAdo com esta pauta ou chave idempotente.");
-        return;
-      }
-      if (error instanceof Error && /não encontrada|não encontrado|inativo|AGENT_AUTHOR_ID|tags não foram encontradas/.test(error.message)) {
-        agentError(res, 422, "editorial_reference_invalid", "Uma refer\xEAncia editorial n\xE3o existe ou n\xE3o est\xE1 configurada.");
-        return;
-      }
-      if (error instanceof Error && /não encontrada|Categoria é obrigatória|tags não foram encontradas|AGENT_AUTHOR_ID/.test(error.message)) {
-        agentError(res, 422, "editorial_reference_invalid", "Uma refer\xEAncia editorial n\xE3o existe ou n\xE3o est\xE1 configurada.");
-        return;
-      }
-      console.error("[Articles] create failed:", error instanceof Error ? error.name : "UnknownError", res.getHeader("X-Request-Id"));
-      agentError(res, 503, "server_error", "N\xE3o foi poss\xEDvel guardar a dica.");
-    }
-  });
+  router2.post("/", createTip);
   router2.get("/:slug", async (req, res) => {
-    const slug = String(req.params.slug);
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-      res.status(404).json({ error: { code: "not_found", message: "Dica n\xE3o encontrada." } });
-      return;
-    }
     try {
-      const article = await getPublishedArticleBySlug(slug);
-      if (!article) {
-        res.status(404).json({ error: { code: "not_found", message: "Dica n\xE3o encontrada." } });
+      const tip = await getPublishedTipBySlug(String(req.params.slug));
+      if (!tip) {
+        res.status(404).json({ error: "Conte\xFAdo n\xE3o encontrado." });
         return;
       }
-      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
-      res.json(article);
-    } catch (error) {
-      console.error("[Articles] detail failed:", error instanceof Error ? error.name : "UnknownError");
-      res.status(503).json({ error: { code: "server_error", message: "N\xE3o foi poss\xEDvel carregar esta dica." } });
+      cachePublic2(res);
+      res.json(tip);
+    } catch {
+      res.status(503).json({ error: "N\xE3o foi poss\xEDvel carregar o conte\xFAdo." });
     }
   });
   return router2;
@@ -2111,9 +1844,9 @@ var RECIPE_AGENT_TAXONOMY = {
   tipTopics: TIP_TOPICS.map((item) => ({
     slug: item.slug,
     name: item.name,
-    riskLevel: item.riskLevel,
+    riskLevel: "low",
     active: true,
-    agentEnabled: item.riskLevel === "low"
+    agentEnabled: true
   }))
 };
 function isAuthorized(req, res) {
@@ -2166,10 +1899,10 @@ function createAgentReadRouter() {
       if (topicSlug) {
         const [recipe, article] = await Promise.all([
           getAgentRecipeByTopicSlug(topicSlug),
-          getAgentArticleByTopicSlug(topicSlug)
+          getTipByTopicSlug(topicSlug)
         ]);
         if (recipe) found.push({
-          content_type: "recipe",
+          content_kind: "recipe",
           id: recipe.id,
           slug: recipe.slug,
           title: recipe.title,
@@ -2177,7 +1910,7 @@ function createAgentReadRouter() {
           generation_meta: recipe.generationMeta
         });
         if (article) found.push({
-          content_type: "article",
+          content_kind: "tip",
           id: article.id,
           slug: article.slug,
           title: article.title,
@@ -2185,15 +1918,16 @@ function createAgentReadRouter() {
           generation_meta: article.generationMeta
         });
       } else if (slug) {
-        const recipe = await getAgentRecipeBySlug(slug);
+        const [recipe, tip] = await Promise.all([getAgentRecipeBySlug(slug), getTipBySlug(slug)]);
         if (recipe) found.push({
-          content_type: "recipe",
+          content_kind: "recipe",
           id: recipe.id,
           slug: recipe.slug,
           title: recipe.title,
           status: recipe.status,
           generation_meta: recipe.generationMeta
         });
+        if (tip) found.push({ content_kind: "tip", id: tip.id, slug: tip.slug, title: tip.title, status: tip.status, generation_meta: tip.generationMeta });
       }
       res.json({ exists: found.length > 0, items: found });
     } catch (error) {
@@ -2221,6 +1955,18 @@ function createAgentReadRouter() {
     }
   });
   return router2;
+}
+
+// server/tipPage.ts
+function renderTipPageHtml(template, tip) {
+  if (!tip) return template.replace("<title>Chocol\xEDcia</title>", "<title>Conte\xFAdo n\xE3o encontrado | Chocol\xEDcia</title>");
+  const title = escapeHtml(tip.title);
+  const description = escapeHtml(tip.metaDescription ?? tip.excerpt);
+  const canonical = escapeHtml(tip.canonicalUrl ?? `/dicas/${tip.slug}`);
+  return template.replace("<title>Chocol\xEDcia</title>", `<title>${title} | Chocol\xEDcia</title>`).replace("</head>", `<meta name="description" content="${description}"><link rel="canonical" href="${canonical}"></head>`).replace("<body", `<body data-tip-prerendered="true" data-tip-slug="${escapeHtml(tip.slug)}"`);
+}
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
 }
 
 // client/src/config/site.ts
@@ -2264,51 +2010,6 @@ var WA_ORCAMENTO = waLink(
 var WA_SAUDACAO = waLink(
   "Ol\xE1, Chocol\xEDcia! Tudo bem? Gostaria de conhecer melhor o trabalho de voc\xEAs."
 );
-
-// server/articlePage.ts
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
-}
-function articleBody(article) {
-  const paragraphs = article.content.split(/\r?\n/).map((line) => {
-    const text2 = line.replace(/^#{1,6}\s+/, "").replace(/^\s*[-*]\s+/, "").replace(/^\s*\d+[.)]\s+/, "").trim();
-    if (!text2) return "";
-    if (/^#{1,6}\s+/.test(line)) return `<h2>${escapeHtml(text2)}</h2>`;
-    return `<p>${escapeHtml(text2)}</p>`;
-  }).join("");
-  return `<main id="article-prerender" lang="pt-BR"><article><p>Dica da Chocol\xEDcia</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.excerpt ?? "")}</p>${article.coverImageUrl ? `<img src="${escapeHtml(article.coverImageUrl)}" alt="${escapeHtml(article.coverImageAlt ?? article.title)}" width="1280" height="853" />` : ""}<p>Imagem ilustrativa</p>${paragraphs}<p>Conte\xFAdo elaborado pela Equipe Chocol\xEDcia com apoio de intelig\xEAncia artificial.</p><a href="/dicas">Voltar \xE0s dicas</a></article></main>`;
-}
-function renderArticlePageHtml(template, article) {
-  if (!article) {
-    const body = '<main id="article-prerender" lang="pt-BR"><h1>Dica n\xE3o encontrada</h1><p>Este conte\xFAdo n\xE3o est\xE1 dispon\xEDvel.</p><a href="/dicas">Voltar \xE0s dicas</a></main>';
-    return template.replace(/<title>[\s\S]*?<\/title>/, "<title>Dica n\xE3o encontrada | Chocol\xEDcia</title>").replace("<head>", '<head><meta name="robots" content="noindex,follow" />').replace('<div id="root"></div>', `<div id="root" data-article-prerendered="true">${body}</div>`);
-  }
-  const canonical = `${SITE.url}/dicas/${encodeURIComponent(article.slug)}`;
-  const title = escapeHtml(`${article.title} | Dicas Chocol\xEDcia`);
-  const description = escapeHtml(article.excerpt ?? "");
-  const image = article.coverImageUrl ? escapeHtml(article.coverImageUrl) : "";
-  const modifiedAt = article.updatedAt ?? /* @__PURE__ */ new Date(0);
-  const jsonLd = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.title,
-    description: article.excerpt ?? "",
-    image: article.coverImageUrl ? [article.coverImageUrl] : [],
-    author: { "@type": "Organization", name: "Equipe Chocol\xEDcia" },
-    publisher: { "@type": "Organization", name: SITE.fullName, url: SITE.url },
-    datePublished: article.publishedAt?.toISOString(),
-    dateModified: modifiedAt.toISOString()
-  }).replace(/</g, "\\u003c");
-  const head = `<title>${title}</title><meta name="description" content="${description}" /><link rel="canonical" href="${escapeHtml(canonical)}" /><meta property="og:type" content="article" /><meta property="og:url" content="${escapeHtml(canonical)}" /><meta property="og:title" content="${title}" /><meta property="og:description" content="${description}" /><meta property="og:image" content="${image}" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="${title}" /><meta name="twitter:description" content="${description}" /><meta name="twitter:image" content="${image}" /><script type="application/ld+json">${jsonLd}</script>`;
-  const html = template.replace(/<title>[\s\S]*?<\/title>/, "").replace(/<link rel="canonical"[^>]*\/?\s*>/g, "").replace(/<meta property="og:[^>]*\/?\s*>/g, "").replace(/<meta name="twitter:[^>]*\/?\s*>/g, "").replace(/<meta name="description"[^>]*\/?\s*>/g, "").replace("<head>", `<head>${head}`);
-  return html.replace('<div id="root"></div>', `<div id="root" data-article-prerendered="true">${articleBody(article)}</div>`);
-}
 
 // server/recipePage.ts
 function escapeHtml2(value) {
@@ -2393,13 +2094,13 @@ function xmlEscape(value) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 async function generateRecipesSitemap() {
-  const [recipes2, articles2] = await Promise.all([getPublishedRecipeSlugs(), getPublishedArticleSlugs()]);
+  const [recipes2, tips2] = await Promise.all([getPublishedRecipeSlugs(), listPublishedTips(5e3)]);
   const staticPaths = ["/", "/receitas", "/dicas", "/buffet-para-festas", "/bolos-personalizados", "/doces-para-festas", "/areas-atendidas"];
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const urls = [
     ...staticPaths.map((page) => `<url><loc>${xmlEscape(`${SITE.url}${page === "/" ? "/" : page}`)}</loc><lastmod>${today}</lastmod></url>`),
     ...recipes2.map((recipe) => `<url><loc>${xmlEscape(`${SITE.url}/receitas/${encodeURIComponent(recipe.slug)}`)}</loc><lastmod>${recipe.updatedAt.toISOString()}</lastmod></url>`),
-    ...articles2.map((article) => `<url><loc>${xmlEscape(`${SITE.url}/dicas/${encodeURIComponent(article.slug)}`)}</loc><lastmod>${(article.updatedAt ?? /* @__PURE__ */ new Date(0)).toISOString()}</lastmod></url>`)
+    ...tips2.map((tip) => `<url><loc>${xmlEscape(`${SITE.url}/dicas/${encodeURIComponent(tip.slug)}`)}</loc><lastmod>${(tip.updatedAt ?? /* @__PURE__ */ new Date(0)).toISOString()}</lastmod></url>`)
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;
@@ -2418,12 +2119,12 @@ async function serveRecipePage(slug, res, next) {
     next(error);
   }
 }
-async function serveArticlePage(slug, res, next) {
+async function serveTipPage(slug, res, next) {
   try {
-    const article = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedArticleBySlug(slug) : null;
-    const templatePath = process.env.NODE_ENV === "development" ? path.resolve(process.cwd(), "client/index.html") : path.resolve(process.cwd(), "dist/article-shell.html");
+    const tip = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedTipBySlug(slug) : null;
+    const templatePath = process.env.NODE_ENV === "development" ? path.resolve(process.cwd(), "client/index.html") : path.resolve(process.cwd(), "dist/tip-shell.html");
     const template = await fs.readFile(templatePath, "utf8");
-    res.status(article ? 200 : 404).type("html").setHeader("Cache-Control", article ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store").send(renderArticlePageHtml(template, article));
+    res.status(tip ? 200 : 404).type("html").setHeader("Cache-Control", tip ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store").send(renderTipPageHtml(template, tip));
   } catch (error) {
     next(error);
   }
@@ -2447,9 +2148,9 @@ async function createApp() {
   app.get("/api/recipes-sitemap", (_req, res) => serveSitemap(res));
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
-  app.get("/dicas/:slug", (req, res, next) => serveArticlePage(String(req.params.slug), res, next));
+  app.get("/dicas/:slug", (req, res, next) => serveTipPage(String(req.params.slug), res, next));
   app.use("/api/recipes", createRecipesRouter());
-  app.use("/api/articles", createArticlesRouter());
+  app.use("/api/tips", createTipsRouter());
   app.use("/api", createAgentReadRouter());
   app.use(
     "/api/trpc",

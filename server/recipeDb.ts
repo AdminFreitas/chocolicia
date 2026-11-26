@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gt, gte, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 import type { RecipeInput } from "../shared/recipes";
-import { recipes, type Recipe } from "../drizzle/schema";
+import { authors, recipes, type Recipe } from "../drizzle/schema";
 import { getDb } from "./db";
 
 export type RecipeDb = NonNullable<Awaited<ReturnType<typeof getDb>>>;
@@ -122,7 +122,7 @@ export async function getAllPublishedRecipeTitles(dbOverride?: RecipeDb) {
 }
 
 export async function insertRecipe(
-  input: RecipeInput & { slug: string },
+  input: RecipeInput & { slug: string; authorId?: number | null },
   agent?: { topicSlug: string; idempotencyKey: string; requestHash: string },
 ) {
   const db = requireDb(await getDb());
@@ -135,6 +135,7 @@ export async function insertRecipe(
     category: input.category,
     subcategory: input.subcategory ?? null,
     subcategorySlug: input.subcategorySlug ?? null,
+    authorId: input.authorId ?? null,
     tags: input.tags,
     coverImageUrl: input.coverImageUrl,
     coverImageAlt: input.coverImageAlt,
@@ -159,6 +160,15 @@ export async function insertRecipe(
     updatedAt: now,
   }).returning();
   return row;
+}
+
+export async function resolveAuthorId(id?: number, slug?: string): Promise<number> {
+  const db = requireDb(await getDb());
+  const rows = id
+    ? await db.select({ id: authors.id }).from(authors).where(and(eq(authors.id, id), eq(authors.active, true))).limit(1)
+    : slug ? await db.select({ id: authors.id }).from(authors).where(and(eq(authors.slug, slug), eq(authors.active, true))).limit(1) : [];
+  if (!rows[0]) throw new Error("Autor da receita não encontrado ou não informado");
+  return rows[0].id;
 }
 
 export async function getAgentRecipeByIdempotencyKey(key: string) {

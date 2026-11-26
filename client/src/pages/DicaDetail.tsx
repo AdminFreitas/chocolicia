@@ -4,7 +4,7 @@ import RecipePageMeta from "@/components/RecipePageMeta";
 import RecipeSiteChrome from "@/components/RecipeSiteChrome";
 import NotFound from "@/pages/NotFound";
 import { SITE } from "@/config/site";
-import { fetchArticle, type ArticleRecord } from "@/lib/articles";
+import { fetchTip, type TipRecord } from "@/lib/tips";
 
 function renderBody(markdown: string) {
   return markdown.split(/\r?\n/).map((line, index) => {
@@ -16,14 +16,14 @@ function renderBody(markdown: string) {
   });
 }
 
-function ArticleJsonLd({ article }: { article: ArticleRecord }) {
+function ArticleJsonLd({ article }: { article: TipRecord }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
     description: article.excerpt ?? "",
     image: [article.coverImageUrl],
-    author: { "@type": "Organization", name: "Equipe Chocolícia" },
+    author: { "@type": "Person", name: article.authorName ?? "Chocolícia" },
     publisher: { "@type": "Organization", name: SITE.fullName, url: SITE.url },
     datePublished: article.publishedAt ?? article.createdAt,
     dateModified: article.updatedAt,
@@ -34,13 +34,13 @@ function ArticleJsonLd({ article }: { article: ArticleRecord }) {
 export default function DicaDetail() {
   const [, params] = useRoute("/dicas/:slug");
   const slug = params?.slug ?? "";
-  const [article, setArticle] = useState<ArticleRecord | null>(null);
+  const [article, setArticle] = useState<TipRecord | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
 
   useEffect(() => {
     if (!slug) return;
     const controller = new AbortController();
-    fetchArticle(slug, controller.signal)
+    fetchTip(slug, controller.signal)
       .then((result) => { setArticle(result); setState(result ? "ready" : "missing"); })
       .catch(() => { if (!controller.signal.aborted) setState("error"); });
     return () => controller.abort();

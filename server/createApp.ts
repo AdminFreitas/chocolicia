@@ -5,10 +5,10 @@ import { appRouter } from "./routers";
 import { registerAuthRoutes } from "./_core/authRoutes";
 import { createContext } from "./_core/context";
 import { createRecipesRouter } from "./recipesRoutes";
-import { createArticlesRouter } from "./articlesRoutes";
+import { createTipsRouter } from "./tipsRoutes";
 import { createAgentReadRouter } from "./agentReadRoutes";
-import { getPublishedArticleBySlug } from "./articlesDb";
-import { renderArticlePageHtml } from "./articlePage";
+import { getPublishedTipBySlug } from "./tipsDb";
+import { renderTipPageHtml } from "./tipPage";
 import { getPublishedRecipeBySlug } from "./recipeDb";
 import { renderRecipePageHtml } from "./recipePage";
 import { generateRecipesSitemap } from "./recipeSitemap";
@@ -31,17 +31,14 @@ async function serveRecipePage(slug: string, res: Response, next: NextFunction) 
   }
 }
 
-async function serveArticlePage(slug: string, res: Response, next: NextFunction) {
+async function serveTipPage(slug: string, res: Response, next: NextFunction) {
   try {
-    const article = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedArticleBySlug(slug) : null;
+    const tip = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedTipBySlug(slug) : null;
     const templatePath = process.env.NODE_ENV === "development"
       ? path.resolve(process.cwd(), "client/index.html")
-      : path.resolve(process.cwd(), "dist/article-shell.html");
+      : path.resolve(process.cwd(), "dist/tip-shell.html");
     const template = await fs.readFile(templatePath, "utf8");
-    res.status(article ? 200 : 404)
-      .type("html")
-      .setHeader("Cache-Control", article ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store")
-      .send(renderArticlePageHtml(template, article));
+    res.status(tip ? 200 : 404).type("html").setHeader("Cache-Control", tip ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store").send(renderTipPageHtml(template, tip));
   } catch (error) {
     next(error);
   }
@@ -70,10 +67,10 @@ export async function createApp(): Promise<Express> {
   app.get("/api/recipes-sitemap", (_req, res) => serveSitemap(res));
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
-  app.get("/dicas/:slug", (req, res, next) => serveArticlePage(String(req.params.slug), res, next));
+  app.get("/dicas/:slug", (req, res, next) => serveTipPage(String(req.params.slug), res, next));
 
   app.use("/api/recipes", createRecipesRouter());
-  app.use("/api/articles", createArticlesRouter());
+  app.use("/api/tips", createTipsRouter());
   app.use("/api", createAgentReadRouter());
   app.use(
     "/api/trpc",

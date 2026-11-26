@@ -103,8 +103,8 @@ export async function processAgentCover(
       resized.clone().avif({ quality: 55, effort: 4 }).toBuffer(),
     ]);
     const [webpObject, avifObject] = await Promise.all([
-      storagePutPublic(`articles/${slug}-${width}.webp`, webp, "image/webp"),
-      storagePutPublic(`articles/${slug}-${width}.avif`, avif, "image/avif"),
+      storagePutPublic(`tips/${slug}-${width}.webp`, webp, "image/webp"),
+      storagePutPublic(`tips/${slug}-${width}.avif`, avif, "image/avif"),
     ]);
     variants[`w${width}` as "w480" | "w800" | "w1280"] = webpObject.url;
     variants[`avif${width}` as "avif480" | "avif800" | "avif1280"] = avifObject.url;

@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeInputSchemaV1, recipeListQuerySchema } from "../shared/recipes";
-import { getAgentRecipeByIdempotencyKey, getAgentRecipeByTopicSlug, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug, countAgentRecipesSince } from "./recipeDb";
+import { getAgentRecipeByIdempotencyKey, getAgentRecipeByTopicSlug, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug, countAgentRecipesSince, resolveAuthorId } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
 import { agentError, agentTokensConfigured, hashRequest, publishingAllowed, requestId, requireV1, resolveAgentScope } from "./agentAuth";
 import { processAgentCover } from "./agentImages";
@@ -176,6 +176,10 @@ async function createV1Recipe(req: Request, res: Response) {
         cover: image.source,
       },
     };
+    if (!clean.authorId && !clean.authorSlug) {
+      agentError(res, 422, "author_required", "A receita precisa de um autor resolvido pela regra editorial.");
+      return;
+    }
     const recipe = await insertRecipe({
       slug,
       title: clean.title,
@@ -183,6 +187,7 @@ async function createV1Recipe(req: Request, res: Response) {
       category: taxonomy.category as Parameters<typeof insertRecipe>[0]["category"],
       subcategory: taxonomy.subcategory,
       subcategorySlug: clean.subcategorySlug,
+      authorId: await resolveAuthorId(clean.authorId, clean.authorSlug),
       tags: clean.tags,
       coverImageUrl: image.url,
       coverImageAlt: clean.coverImageAlt,
