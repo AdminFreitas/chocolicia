@@ -16,7 +16,7 @@ async function existingByAgentKeys(db: NonNullable<Awaited<ReturnType<typeof get
   if (!predicates.length) return null;
   const rows = await db.select().from(tips).where(or(...predicates)).limit(2);
   if (rows.length > 1) {
-    throw new TipPersistenceError("idempotency_conflict", "A chave e o tópico de idempotência apontam para dicas diferentes.", 409);
+    throw new TipPersistenceError("idempotency_conflict", "A chave de idempotência corresponde a mais de uma dica; verifique os dados existentes.", 409);
   }
   return rows[0] ?? null;
 }
