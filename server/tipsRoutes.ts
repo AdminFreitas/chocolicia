@@ -24,6 +24,15 @@ function sanitizeString(value: string) {
     .trim();
 }
 
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
 function sanitizeDeep<T>(value: T): T {
   if (typeof value === "string") return sanitizeString(value) as T;
   if (Array.isArray(value)) return value.map(sanitizeDeep) as T;
@@ -96,6 +105,8 @@ export function createTipsRouter() {
       return;
     }
     const input = sanitizeDeep(parsed.data);
+    const requestHash = createHash("sha256").update(stableStringify({ ...input, agentRequestHash: undefined })).digest("hex");
+    input.agentRequestHash = requestHash;
     const slug = input.slug ?? toSlug(input.title);
     if (!slug) {
       res.status(400).json({ error: "Não foi possível gerar o slug da dica.", code: "invalid_slug" });
