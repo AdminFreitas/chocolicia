@@ -60,6 +60,18 @@ export const tipInputSchema = z.preprocess((value) => {
     if (input[camel] === undefined && input[snake] !== undefined) input[camel] = input[snake];
     delete input[snake];
   }
+  if (input.topicSlug === undefined && typeof input.agentTopicSlug === "string") input.topicSlug = input.agentTopicSlug;
+  if (Array.isArray(input.images)) {
+    input.images = input.images.map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+      const image = { ...(entry as Record<string, unknown>) };
+      for (const [snake, camel] of [["image_id", "imageId"], ["image_url", "imageUrl"], ["alt_text", "altText"], ["image_role", "imageRole"], ["sort_order", "sortOrder"]] as const) {
+        if (image[camel] === undefined && image[snake] !== undefined) image[camel] = image[snake];
+        delete image[snake];
+      }
+      return image;
+    });
+  }
   return input;
 }, tipInputBaseSchema).refine((input) => Boolean(input.agentIdempotencyKey || input.agentTopicSlug), {
   message: "Informe agentIdempotencyKey ou agentTopicSlug para garantir idempotência.",
