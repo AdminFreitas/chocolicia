@@ -120,11 +120,31 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
   return { tip: result, created: true };
 }
 
+const publicTipSelection = {
+  id: tips.id,
+  slug: tips.slug,
+  title: tips.title,
+  excerpt: tips.excerpt,
+  content: tips.content,
+  tipType: tips.tipType,
+  topicId: tips.topicId,
+  coverImageUrl: tips.coverImageUrl,
+  coverImageAlt: tips.coverImageAlt,
+  metaTitle: tips.metaTitle,
+  metaDescription: tips.metaDescription,
+  canonicalUrl: tips.canonicalUrl,
+  tags: tips.tags,
+  status: tips.status,
+  publishedAt: tips.publishedAt,
+  createdAt: tips.createdAt,
+  updatedAt: tips.updatedAt,
+};
+
 export async function listPublishedTips(limit = 20) {
   const db = await getDb();
   if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
   return db.select({
-    tip: tips,
+    tip: publicTipSelection,
     topicName: tipTopics.name,
     topicSlug: tipTopics.slug,
   }).from(tips)
@@ -138,12 +158,29 @@ export async function getPublishedTipBySlug(slug: string) {
   const db = await getDb();
   if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
   const rows = await db.select({
-    tip: tips,
+    tip: publicTipSelection,
     topicName: tipTopics.name,
     topicSlug: tipTopics.slug,
   }).from(tips)
     .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
     .where(and(eq(tips.slug, slug), eq(tips.status, "published"), isNotNull(tips.publishedAt)))
     .limit(1);
-  return rows[0] ?? null;
+  const row = rows[0];
+  if (!row) return null;
+
+  const [relatedImages, relatedTags] = await Promise.all([
+    db.select({
+      imageId: tipImages.imageId,
+      imageUrl: tipImages.imageUrl,
+      altText: tipImages.altText,
+      caption: tipImages.caption,
+      imageRole: tipImages.imageRole,
+      sortOrder: tipImages.sortOrder,
+    }).from(tipImages).where(eq(tipImages.tipId, row.tip.id)).orderBy(tipImages.sortOrder),
+    db.select({ slug: tags.slug, name: tags.name })
+      .from(tipTags)
+      .innerJoin(tags, eq(tipTags.tagId, tags.id))
+      .where(eq(tipTags.tipId, row.tip.id)),
+  ]);
+  return { ...row, images: relatedImages, relatedTags };
 }
