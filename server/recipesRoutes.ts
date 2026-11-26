@@ -3,6 +3,7 @@ import express, { type Request, type Response } from "express";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
 import { findRecipeByAgentKeys, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
+import { hasMatchingRecipeRequestHash } from "./recipeIdempotency";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
 
@@ -185,7 +186,7 @@ export function createRecipesRouter() {
     try {
       const existing = await findRecipeByAgentKeys(clean);
       if (existing) {
-        if (existing.agentRequestHash !== requestHash) {
+        if (!hasMatchingRecipeRequestHash(existing.agentRequestHash, requestHash)) {
           res.status(409).json({ error: "A chave de idempotência já foi usada com outro conteúdo ou não possui hash verificável.", code: "idempotency_payload_conflict" });
           return;
         }
@@ -200,7 +201,7 @@ export function createRecipesRouter() {
       if (dbError.code === "23505") {
         try {
           const existing = await findRecipeByAgentKeys(clean);
-          if (existing && existing.agentRequestHash === requestHash) {
+          if (existing && hasMatchingRecipeRequestHash(existing.agentRequestHash, requestHash)) {
             res.setHeader("Idempotent-Replay", "true");
             res.status(200).json(existing);
             return;
