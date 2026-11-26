@@ -171,8 +171,8 @@ export function createRecipesRouter() {
       res.status(400).json({ error: "A imagem precisa de um URL HTTP ou HTTPS." });
       return;
     }
-    if (!clean.agentIdempotencyKey && !clean.agentTopicSlug) {
-      res.status(422).json({ error: "Informe agentIdempotencyKey ou agentTopicSlug para garantir idempotência.", code: "idempotency_required" });
+    if (!clean.agentIdempotencyKey) {
+      res.status(400).json({ error: "Informe agentIdempotencyKey para cada solicitação.", code: "idempotency_key_required" });
       return;
     }
     const requestHash = createHash("sha256").update(stableStringify({ ...clean, agentRequestHash: undefined })).digest("hex");
