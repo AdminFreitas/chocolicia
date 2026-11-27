@@ -7,12 +7,12 @@ type HeaderProps = { variant?: "home" | "recipes" };
 type FooterProps = { variant?: "home" | "recipes" };
 
 const homeNavigation: Array<[string, string]> = [
-  ["Início", "#inicio"], ["Promoção", "/promocao"], ["Receitas", "/receitas"],
+  ["Início", "#inicio"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Dicas", "/dicas"],
   ["Orçamento", "#orcamento"], ["Catálogo", "#catalogo"], ["Sobre", "#sobre"], ["FAQ", "#faq"],
 ];
 
 const pageNavigation: Array<[string, string]> = [
-  ["Início", "/"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Orçamento", "/#orcamento"],
+  ["Início", "/"], ["Promoção", "/promocao"], ["Receitas", "/receitas"], ["Dicas", "/dicas"], ["Orçamento", "/#orcamento"],
   ["Catálogo", "/#catalogo"], ["Sobre", "/#sobre"], ["FAQ", "/#faq"],
 ];
 
@@ -49,7 +49,7 @@ export function SiteFooter({ variant = "home" }: FooterProps) {
       <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div><a href="/" className="font-display text-2xl text-[#FFF9F0]">Chocolícia</a><p className="mt-1 text-xs">Doces artesanais para celebrar com afeto.</p></div>
         <nav aria-label="Links do rodapé" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-          <a href="/receitas" className="hover:text-[#F3CD73]">Receitas</a><a href="/promocao" className="hover:text-[#F3CD73]">Promoção</a><a href="/buffet-para-festas" className="hover:text-[#F3CD73]">Buffet</a><a href="/bolos-personalizados" className="hover:text-[#F3CD73]">Bolos</a><a href="/politicas-e-termos" className="hover:text-[#F3CD73]">Privacidade</a>
+          <a href="/receitas" className="hover:text-[#F3CD73]">Receitas</a><a href="/dicas" className="hover:text-[#F3CD73]">Dicas</a><a href="/promocao" className="hover:text-[#F3CD73]">Promoção</a><a href="/buffet-para-festas" className="hover:text-[#F3CD73]">Buffet</a><a href="/bolos-personalizados" className="hover:text-[#F3CD73]">Bolos</a><a href="/politicas-e-termos" className="hover:text-[#F3CD73]">Privacidade</a>
         </nav><p className="text-xs">© {new Date().getFullYear()} {SITE.fullName}. {SITE.city}, {SITE.state}.</p>
       </div>
     </footer>;
@@ -57,7 +57,7 @@ export function SiteFooter({ variant = "home" }: FooterProps) {
   return <footer className="site-footer border-t border-[#FFF9F0]/10 bg-[#3A241D] px-4 py-10 pb-28 text-[#FFF9F0]/70 md:px-6 md:py-12 md:pb-28 lg:px-8">
     <div className="site-footer-inner mx-auto max-w-7xl">
       <div className="site-footer-brand"><a href="#inicio" className="footer-brand-lockup" aria-label="Chocolícia — início"><img src="/images/logo.png" alt="" loading="lazy" decoding="async" /><span className="font-display text-3xl text-[#FFF9F0]">Chocolícia</span></a><p>Doces artesanais para celebrar com afeto.</p></div>
-      <nav className="site-footer-nav" aria-label="Links essenciais"><p className="footer-kicker">Navegação</p><a href="#inicio">Início</a><a href="#buffet">Serviços & Buffet</a><a href="/receitas">Receitas</a><a href="/promocao">Promoção</a><a href="#orcamento">Orçamento</a></nav>
+      <nav className="site-footer-nav" aria-label="Links essenciais"><p className="footer-kicker">Navegação</p><a href="#inicio">Início</a><a href="#buffet">Serviços & Buffet</a><a href="/receitas">Receitas</a><a href="/dicas">Dicas</a><a href="/promocao">Promoção</a><a href="#orcamento">Orçamento</a></nav>
       <div className="site-footer-contact"><p className="footer-kicker">Contato</p><p>Niterói, Rio de Janeiro</p><a href={`tel:+${SITE.whatsappNumber}`} onClick={() => trackEvent("phone_click", { placement: "home_footer" })}>{SITE.whatsappDisplay}</a><a href={`mailto:${SITE.email}`}>{SITE.email}</a></div>
       <div className="site-footer-social"><p className="footer-kicker">Redes sociais</p><div className="mt-4 flex items-center gap-3">
         <a href={SITE.instagram} target="_blank" rel="noreferrer" aria-label="Instagram" className="social-icon" onClick={() => trackEvent("instagram_click", { placement: "footer_social_icons" })}><Instagram className="h-5 w-5" /></a>
