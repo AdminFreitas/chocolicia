@@ -27,7 +27,7 @@ function TipCard({ item }: { item: TipListItem }) {
         <span className="absolute left-4 top-4 rounded-full border border-[#F3CD73]/60 bg-[#3A241D]/75 px-3 py-1 text-[.65rem] font-semibold uppercase tracking-[.14em] text-[#F3CD73]">{item.topicName || "Dica"}</span>
       </div>
       <div className="p-5 md:p-6">
-        {date && <time dateTime={tip.publishedAt ?? undefined} className="text-xs text-[#8A5A44]">{date}</time>}
+        {date && <time dateTime={tip.publishedAt ?? undefined} className="text-xs text-[#8A5A44]">{date}</time>}{item.authorName && <span className="ml-2 text-xs text-[#8A5A44]">· {item.authorName}</span>}
         <h2 className="mt-2 line-clamp-2 font-display text-2xl font-medium leading-tight text-[#5A3428]">{tip.title}</h2>
         {tip.excerpt && <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#8A5A44]">{tip.excerpt}</p>}
         <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#5A3428] underline decoration-[#D9A83E]/80 underline-offset-4">Ler dica <span aria-hidden="true">↗</span></span>
