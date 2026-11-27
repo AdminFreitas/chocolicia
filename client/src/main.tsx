@@ -49,7 +49,7 @@ const app = (
   </trpc.Provider>
 );
 
-// O HTML de detalhe dinâmico é uma versão SEO estática; a aplicação React substitui-o após carregar.
+// O HTML de detalhe de receita ou dica é uma versão SEO estática; a aplicação React substitui-o após carregar.
 // Nas páginas pré-renderizadas de build, hydrateRoot preserva a marcação existente.
 if (rootElement.dataset.recipePrerendered === "true" || rootElement.dataset.tipPrerendered === "true") {
   createRoot(rootElement).render(app);
