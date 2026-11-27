@@ -107,6 +107,7 @@ async function prerender() {
   const template = readTemplate();
   // Mantém uma cópia limpa; os endpoints dinâmicos não devem partir do HTML já prerenderizado da Home.
   writeFile(path.join(root, "dist", "recipe-shell.html"), template);
+  writeFile(path.join(root, "dist", "tip-shell.html"), template);
 
   for (const routePath of PRERENDER_PATHS) {
     const meta = getRouteMeta(routePath);

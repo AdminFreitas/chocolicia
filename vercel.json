@@ -12,6 +12,10 @@
     },
     "api/recipes-sitemap.js": {
       "maxDuration": 30
+    },
+    "api/tip-page.js": {
+      "maxDuration": 30,
+      "includeFiles": "dist/tip-shell.html"
     }
   },
   "crons": [
@@ -21,6 +25,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/dicas/:slug",
+      "destination": "/api/tip-page?slug=:slug"
+    },
     {
       "source": "/receitas/:slug",
       "destination": "/api/recipe-page?slug=:slug"

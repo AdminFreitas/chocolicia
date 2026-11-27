@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import express, { type Request, type Response } from "express";
 import { RECIPE_TAXONOMY, recipeInputSchema, recipeListQuerySchema } from "../shared/recipes";
-import { getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
+import { findRecipeByAgentKeys, getPublishedRecipeBySlug, insertRecipe, listFeaturedRecipes, listRecipes, toSlug } from "./recipeDb";
 import { runDailyRecipeGeneration } from "./recipeAgent";
+import { hasMatchingRecipeRequestHash, hasRecipeIdempotencyKey } from "./recipeIdempotency";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
 
@@ -34,6 +35,41 @@ function sanitizeDeep<T>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeDeep(item)])) as T;
   }
   return value;
+}
+
+function normalizeRecipeAgentFields(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const input = { ...(value as Record<string, unknown>) };
+  const aliases: Array<[string, string]> = [
+    ["agent_idempotency_key", "agentIdempotencyKey"],
+    ["agent_topic_slug", "agentTopicSlug"],
+    ["agent_request_hash", "agentRequestHash"],
+    ["generation_meta", "generationMeta"],
+    ["published_at", "publishedAt"],
+    ["cover_image_url", "coverImageUrl"],
+    ["cover_image_alt", "coverImageAlt"],
+    ["image_prompt", "imagePrompt"],
+    ["cover_image_variants", "coverImageVariants"],
+    ["prep_time_min", "prepTimeMin"],
+    ["cook_time_min", "cookTimeMin"],
+    ["storage_notes", "storageNotes"],
+    ["ai_model", "aiModel"],
+  ];
+  for (const [snake, camel] of aliases) {
+    if (input[camel] === undefined && input[snake] !== undefined) input[camel] = input[snake];
+    delete input[snake];
+  }
+  return input;
+}
+
+function stableStringify(value: unknown): string {
+  if (value instanceof Date) return JSON.stringify(value.toISOString());
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
 }
 
 function slugify(title: string) {
@@ -116,7 +152,7 @@ export function createRecipesRouter() {
       res.status(413).json({ error: "O conteúdo excede o limite permitido." });
       return;
     }
-    const parsed = recipeInputSchema.safeParse(req.body);
+    const parsed = recipeInputSchema.safeParse(normalizeRecipeAgentFields(req.body));
     if (!parsed.success) {
       res.status(400).json({ error: "Receita inválida.", details: parsed.error.flatten() });
       return;
@@ -136,18 +172,44 @@ export function createRecipesRouter() {
       res.status(400).json({ error: "A imagem precisa de um URL HTTP ou HTTPS." });
       return;
     }
+    if (!hasRecipeIdempotencyKey(clean.agentIdempotencyKey)) {
+      res.status(400).json({ error: "Informe agentIdempotencyKey para cada solicitação.", code: "idempotency_key_required" });
+      return;
+    }
+    const requestHash = createHash("sha256").update(stableStringify({ ...clean, agentRequestHash: undefined })).digest("hex");
+    clean.agentRequestHash = requestHash;
     const slug = clean.slug ?? slugify(clean.title);
     if (!slug) {
       res.status(400).json({ error: "Não foi possível gerar o slug da receita." });
       return;
     }
     try {
+      const existing = await findRecipeByAgentKeys(clean);
+      if (existing) {
+        if (!hasMatchingRecipeRequestHash(existing.agentRequestHash, requestHash)) {
+          res.status(409).json({ error: "A chave de idempotência já foi usada com outro conteúdo ou não possui hash verificável.", code: "idempotency_payload_conflict" });
+          return;
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        res.status(200).json(existing);
+        return;
+      }
       const recipe = await insertRecipe({ ...clean, slug });
       res.status(201).json(recipe);
     } catch (error) {
       const dbError = error as { code?: string };
       if (dbError.code === "23505") {
-        res.status(409).json({ error: "Já existe uma receita com este slug." });
+        try {
+          const existing = await findRecipeByAgentKeys(clean);
+          if (existing && hasMatchingRecipeRequestHash(existing.agentRequestHash, requestHash)) {
+            res.setHeader("Idempotent-Replay", "true");
+            res.status(200).json(existing);
+            return;
+          }
+        } catch (lookupError) {
+          console.error("[Recipes] idempotency lookup:", lookupError);
+        }
+        res.status(409).json({ error: "Já existe uma receita com este slug ou chave de idempotência.", code: "unique_conflict" });
         return;
       }
       console.error("[Recipes] create:", error);

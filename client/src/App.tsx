@@ -15,6 +15,8 @@ const DocesParaFestas = lazy(() => import("./pages/DocesParaFestas"));
 const Legal = lazy(() => import("./pages/Legal"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Recipes = lazy(() => import("./pages/Recipes"));
+const Tips = lazy(() => import("./pages/Tips"));
+const TipDetail = lazy(() => import("./pages/TipDetail"));
 const RecipeDetail = lazy(() => import("./pages/RecipeDetail"));
 const Promotion = lazy(() => import("./pages/Promotion"));
 
@@ -30,6 +32,18 @@ function RecipeDetailRoute() {
   return <Suspense fallback={<RecipeRouteFallback detail />}><RecipeDetail /></Suspense>;
 }
 
+function TipRouteFallback() {
+  return <div className="flex min-h-[55vh] items-center justify-center bg-[#FFF9F0] px-4 text-[#8A5A44]" role="status">Carregando dica...</div>;
+}
+
+function TipsRoute() {
+  return <Suspense fallback={<TipRouteFallback />}><Tips /></Suspense>;
+}
+
+function TipDetailRoute() {
+  return <Suspense fallback={<TipRouteFallback />}><TipDetail /></Suspense>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -40,6 +54,8 @@ function Router() {
       <Route path="/areas-atendidas"><LazyRoute><AreasAtendidas /></LazyRoute></Route>
       <Route path="/politicas-e-termos"><LazyRoute><Legal /></LazyRoute></Route>
       <Route path="/receitas" component={RecipeListRoute} />
+      <Route path="/dicas" component={TipsRoute} />
+      <Route path="/dicas/:slug" component={TipDetailRoute} />
       <Route path="/promocao"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/promocoes"><LazyRoute><Promotion /></LazyRoute></Route>
       <Route path="/receitas/:slug" component={RecipeDetailRoute} />

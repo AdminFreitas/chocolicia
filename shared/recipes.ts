@@ -96,6 +96,9 @@ export const recipeInputSchema = z.object({
   publishedAt: z.coerce.date().optional(),
   aiModel: z.string().max(120).optional(),
   generationMeta: z.record(z.string(), z.unknown()).default({}),
+  agentIdempotencyKey: z.string().trim().min(8).max(128).optional(),
+  agentTopicSlug: z.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  agentRequestHash: z.string().trim().min(16).max(64).optional(),
 });
 
 export type RecipeInput = z.infer<typeof recipeInputSchema>;

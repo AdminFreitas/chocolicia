@@ -121,6 +121,14 @@ export async function getAllPublishedRecipeTitles(dbOverride?: RecipeDb) {
     .orderBy(desc(recipes.publishedAt));
 }
 
+export async function findRecipeByAgentKeys(input: Pick<RecipeInput, "agentIdempotencyKey">, dbOverride?: RecipeDb) {
+  const db = requireDb(dbOverride ?? await getDb());
+  if (!input.agentIdempotencyKey) return null;
+  const rows = await db.select().from(recipes)
+    .where(eq(recipes.agentIdempotencyKey, input.agentIdempotencyKey)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function insertRecipe(input: RecipeInput & { slug: string }) {
   const db = requireDb(await getDb());
   const now = new Date();
@@ -150,6 +158,9 @@ export async function insertRecipe(input: RecipeInput & { slug: string }) {
     publishedAt,
     aiModel: input.aiModel ?? null,
     generationMeta: input.generationMeta,
+    agentIdempotencyKey: input.agentIdempotencyKey ?? null,
+    agentTopicSlug: input.agentTopicSlug ?? null,
+    agentRequestHash: input.agentRequestHash ?? null,
     updatedAt: now,
   }).returning();
   return row;

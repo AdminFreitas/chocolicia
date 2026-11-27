@@ -22,6 +22,27 @@
       "when": 1795000000000,
       "tag": "0002_recipe_subcategories",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795730000000,
+      "tag": "0003_tips_agent_idempotency",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795730001000,
+      "tag": "0004_recipes_agent_idempotency",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795795148950,
+      "tag": "0005_recipes_review_status_idx",
+      "breakpoints": true
     }
   ]
 }

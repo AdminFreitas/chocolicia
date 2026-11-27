@@ -5,8 +5,11 @@ import { appRouter } from "./routers";
 import { registerAuthRoutes } from "./_core/authRoutes";
 import { createContext } from "./_core/context";
 import { createRecipesRouter } from "./recipesRoutes";
+import { createTipsRouter } from "./tipsRoutes";
 import { getPublishedRecipeBySlug } from "./recipeDb";
+import { getPublishedTipBySlug } from "./tipsDb";
 import { renderRecipePageHtml } from "./recipePage";
+import { renderTipPageHtml } from "./tipPage";
 import { generateRecipesSitemap } from "./recipeSitemap";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -22,6 +25,22 @@ async function serveRecipePage(slug: string, res: Response, next: NextFunction) 
       .type("html")
       .setHeader("Cache-Control", recipe ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store")
       .send(renderRecipePageHtml(template, recipe));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function serveTipPage(slug: string, res: Response, next: NextFunction) {
+  try {
+    const tip = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? await getPublishedTipBySlug(slug) : null;
+    const templatePath = process.env.NODE_ENV === "development"
+      ? path.resolve(process.cwd(), "client/index.html")
+      : path.resolve(process.cwd(), "dist/tip-shell.html");
+    const template = await fs.readFile(templatePath, "utf8");
+    res.status(tip ? 200 : 404)
+      .type("html")
+      .setHeader("Cache-Control", tip ? "public, s-maxage=60, stale-while-revalidate=300" : "no-store")
+      .send(renderTipPageHtml(template, tip));
   } catch (error) {
     next(error);
   }
@@ -50,8 +69,10 @@ export async function createApp(): Promise<Express> {
   app.get("/api/recipes-sitemap", (_req, res) => serveSitemap(res));
   app.get("/sitemap.xml", (_req, res) => serveSitemap(res));
   app.get("/receitas/:slug", (req, res, next) => serveRecipePage(String(req.params.slug), res, next));
+  app.get("/dicas/:slug", (req, res, next) => serveTipPage(String(req.params.slug), res, next));
 
   app.use("/api/recipes", createRecipesRouter());
+  app.use("/api/tips", createTipsRouter());
   app.use(
     "/api/trpc",
     createExpressMiddleware({
