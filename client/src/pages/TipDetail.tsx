@@ -46,8 +46,8 @@ function TipContent({ content }: { content: string }) {
       blocks.push(level === 1 ? <h2 key={index} className={className}>{inlineText(heading[2])}</h2> : level === 2 ? <h2 key={index} className={className}>{inlineText(heading[2])}</h2> : <h3 key={index} className={className}>{inlineText(heading[2])}</h3>);
       return;
     }
-    if (/^[-*]\s+/.test(value)) { ordered = []; unordered.push(value.replace(/^[-*]\s+/, "")); return; }
-    if (/^\d+\.\s+/.test(value)) { unordered = []; ordered.push(value.replace(/^\d+\.\s+/, "")); return; }
+    if (/^[-*]\s+/.test(value)) { if (ordered.length) flushLists(); unordered.push(value.replace(/^[-*]\s+/, "")); return; }
+    if (/^\d+\.\s+/.test(value)) { if (unordered.length) flushLists(); ordered.push(value.replace(/^\d+\.\s+/, "")); return; }
     flushLists();
     if (value.startsWith("> ")) blocks.push(<blockquote key={index} className="my-5 border-l-4 border-[#D9A83E] pl-5 italic text-[#8A5A44]">{inlineText(value.slice(2))}</blockquote>);
     else blocks.push(<p key={index} className="my-4 text-base leading-8 text-[#5A3428]">{inlineText(value)}</p>);
