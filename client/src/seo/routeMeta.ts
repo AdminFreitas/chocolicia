@@ -23,6 +23,7 @@ export interface RouteMeta {
 export const PRERENDER_PATHS = [
   "/",
   "/receitas",
+  "/dicas",
   "/promocao",
   "/promocoes",
   "/buffet-para-festas",
@@ -53,6 +54,14 @@ export const routeMeta: Record<string, RouteMeta> = {
     canonical: `${base}/receitas`,
     ogTitle: "Receitas para adoçar o seu dia | Chocolícia",
     ogDescription: "Receitas artesanais, acolhedoras e testadas para fazer em casa, com dicas da Chocolícia.",
+  },
+  "/dicas": {
+    path: "/dicas",
+    title: "Dicas de confeitaria e preparo | Chocolícia",
+    description: "Aprenda técnicas práticas de preparo, acabamento, apresentação e uso de equipamentos com as dicas da Chocolícia.",
+    canonical: `${base}/dicas`,
+    ogTitle: "Dicas de confeitaria e preparo | Chocolícia",
+    ogDescription: "Orientações práticas para deixar suas criações doces ainda melhores.",
   },
   "/promocao": {
     path: "/promocao",
