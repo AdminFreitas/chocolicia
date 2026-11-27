@@ -178,8 +178,11 @@ export async function getPublishedTipBySlug(slug: string) {
     tip: publicTipSelection,
     topicName: tipTopics.name,
     topicSlug: tipTopics.slug,
+    authorName: authors.name,
+    authorSlug: authors.slug,
   }).from(tips)
     .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
+    .leftJoin(authors, eq(tips.authorId, authors.id))
     .where(and(eq(tips.slug, slug), eq(tips.status, "published"), eq(tips.reviewStatus, "approved"), isNotNull(tips.publishedAt)))
     .limit(1);
   const row = rows[0];
