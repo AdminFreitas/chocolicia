@@ -1,10 +1,13 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   bigint,
   boolean,
   foreignKey,
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -233,6 +236,156 @@ export const tipTags = pgTable("tip_tags", {
   foreignKey({ name: "tip_tags_tag_id_fkey", columns: [table.tagId], foreignColumns: [tags.id] }),
 ]);
 
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 120 }).notNull(),
+  name: varchar("name", { length: 160 }).notNull(),
+  parentId: integer("parent_id"),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
+  riskLevel: varchar("risk_level", { length: 10 }),
+  agentEnabled: boolean("agent_enabled").default(false).notNull(),
+  description: text("description"),
+  seoTitle: varchar("seo_title", { length: 180 }),
+  seoDescription: varchar("seo_description", { length: 320 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("categories_slug_key").on(table.slug),
+  index("idx_categories_parent_id").on(table.parentId),
+  index("idx_categories_active").on(table.active),
+  index("idx_categories_agent_enabled").on(table.agentEnabled),
+  foreignKey({ name: "categories_parent_id_fkey", columns: [table.parentId], foreignColumns: [table.id] }),
+  check("categories_risk_level_check", sql`${table.riskLevel} is null or ${table.riskLevel} in ('low', 'medium', 'high')`),
+]);
+
+export const contentRelations = pgTable("content_relations", {
+  id: serial("id").primaryKey(),
+  recipeId: uuid("recipe_id"),
+  tipId: uuid("tip_id"),
+  relationType: varchar("relation_type", { length: 40 }).default("related").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("content_relations_recipe_id_idx").on(table.recipeId),
+  index("content_relations_tip_id_idx").on(table.tipId),
+  foreignKey({ name: "content_relations_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "content_relations_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id], onDelete: "cascade" }),
+  check("content_relations_source_check", sql`${table.recipeId} is not null or ${table.tipId} is not null`),
+  check("content_relations_type_check", sql`${table.relationType} in ('related', 'complementary', 'recommended', 'tutorial')`),
+]);
+
+export const contentReports = pgTable("content_reports", {
+  id: serial("id").primaryKey(),
+  recipeId: uuid("recipe_id"),
+  tipId: uuid("tip_id"),
+  reportType: varchar("report_type", { length: 50 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 30 }).default("open").notNull(),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (table) => [
+  index("content_reports_status_idx").on(table.status),
+  index("content_reports_recipe_id_idx").on(table.recipeId),
+  index("content_reports_tip_id_idx").on(table.tipId),
+  foreignKey({ name: "content_reports_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "content_reports_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id], onDelete: "cascade" }),
+  check("content_reports_status_check", sql`${table.status} in ('open', 'in_review', 'resolved', 'dismissed')`),
+  check("content_reports_target_check", sql`${table.recipeId} is not null or ${table.tipId} is not null`),
+]);
+
+export const ingredients = pgTable("ingredients", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 180 }).notNull(),
+  slug: varchar("slug", { length: 200 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  notes: text("notes"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("ingredients_slug_key").on(table.slug),
+  uniqueIndex("ingredients_name_lower_uidx").on(sql`lower(${table.name})`),
+]);
+
+export const ingredientAliases = pgTable("ingredient_aliases", {
+  id: serial("id").primaryKey(),
+  ingredientId: integer("ingredient_id").notNull(),
+  alias: varchar("alias", { length: 180 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("ingredient_aliases_ingredient_id_idx").on(table.ingredientId),
+  uniqueIndex("ingredient_aliases_alias_lower_uidx").on(sql`lower(${table.alias})`),
+  foreignKey({ name: "ingredient_aliases_ingredient_id_fkey", columns: [table.ingredientId], foreignColumns: [ingredients.id], onDelete: "cascade" }),
+]);
+
+export const recipeImages = pgTable("recipe_images", {
+  id: serial("id").primaryKey(),
+  recipeId: uuid("recipe_id").notNull(),
+  imageId: uuid("image_id"),
+  imageUrl: text("image_url"),
+  altText: varchar("alt_text", { length: 300 }),
+  caption: text("caption"),
+  imageRole: varchar("image_role", { length: 40 }).default("step").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("recipe_images_recipe_id_idx").on(table.recipeId),
+  index("recipe_images_image_id_idx").on(table.imageId),
+  foreignKey({ name: "recipe_images_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "recipe_images_image_id_fkey", columns: [table.imageId], foreignColumns: [images.id], onDelete: "set null" }),
+]);
+
+export const recipeIngredients = pgTable("recipe_ingredients", {
+  id: serial("id").primaryKey(),
+  recipeId: uuid("recipe_id").notNull(),
+  ingredientId: integer("ingredient_id").notNull(),
+  quantity: numeric("quantity", { precision: 10, scale: 3 }),
+  quantityText: varchar("quantity_text", { length: 120 }),
+  unit: varchar("unit", { length: 50 }),
+  preparation: text("preparation"),
+  groupName: varchar("group_name", { length: 120 }),
+  isOptional: boolean("is_optional").default(false).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("recipe_ingredients_recipe_id_idx").on(table.recipeId),
+  index("recipe_ingredients_ingredient_id_idx").on(table.ingredientId),
+  index("recipe_ingredients_sort_order_idx").on(table.recipeId, table.sortOrder),
+  foreignKey({ name: "recipe_ingredients_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "recipe_ingredients_ingredient_id_fkey", columns: [table.ingredientId], foreignColumns: [ingredients.id] }),
+]);
+
+export const recipeTags = pgTable("recipe_tags", {
+  recipeId: uuid("recipe_id").notNull(),
+  tagId: integer("tag_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  primaryKey({ name: "recipe_tags_pkey", columns: [table.recipeId, table.tagId] }),
+  index("idx_recipe_tags_tag_id").on(table.tagId),
+  foreignKey({ name: "recipe_tags_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "recipe_tags_tag_id_fkey", columns: [table.tagId], foreignColumns: [tags.id], onDelete: "cascade" }),
+]);
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = typeof categories.$inferInsert;
+export type ContentRelation = typeof contentRelations.$inferSelect;
+export type InsertContentRelation = typeof contentRelations.$inferInsert;
+export type ContentReport = typeof contentReports.$inferSelect;
+export type InsertContentReport = typeof contentReports.$inferInsert;
+export type Ingredient = typeof ingredients.$inferSelect;
+export type InsertIngredient = typeof ingredients.$inferInsert;
+export type IngredientAlias = typeof ingredientAliases.$inferSelect;
+export type InsertIngredientAlias = typeof ingredientAliases.$inferInsert;
+export type RecipeImage = typeof recipeImages.$inferSelect;
+export type InsertRecipeImage = typeof recipeImages.$inferInsert;
+export type RecipeIngredient = typeof recipeIngredients.$inferSelect;
+export type InsertRecipeIngredient = typeof recipeIngredients.$inferInsert;
+export type RecipeTag = typeof recipeTags.$inferSelect;
+export type InsertRecipeTag = typeof recipeTags.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type S3File = typeof s3Files.$inferSelect;
