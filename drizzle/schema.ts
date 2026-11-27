@@ -269,8 +269,8 @@ export const contentRelations = pgTable("content_relations", {
 }, (table) => [
   index("content_relations_recipe_id_idx").on(table.recipeId),
   index("content_relations_tip_id_idx").on(table.tipId),
-  foreignKey({ name: "content_relations_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
-  foreignKey({ name: "content_relations_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id], onDelete: "cascade" }),
+  foreignKey({ name: "content_relations_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id]}),
+  foreignKey({ name: "content_relations_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id]}),
   check("content_relations_source_check", sql`${table.recipeId} is not null or ${table.tipId} is not null`),
   check("content_relations_type_check", sql`${table.relationType} in ('related', 'complementary', 'recommended', 'tutorial')`),
 ]);
@@ -289,8 +289,8 @@ export const contentReports = pgTable("content_reports", {
   index("content_reports_status_idx").on(table.status),
   index("content_reports_recipe_id_idx").on(table.recipeId),
   index("content_reports_tip_id_idx").on(table.tipId),
-  foreignKey({ name: "content_reports_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
-  foreignKey({ name: "content_reports_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id], onDelete: "cascade" }),
+  foreignKey({ name: "content_reports_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id]}),
+  foreignKey({ name: "content_reports_tip_id_fkey", columns: [table.tipId], foreignColumns: [tips.id]}),
   check("content_reports_status_check", sql`${table.status} in ('open', 'in_review', 'resolved', 'dismissed')`),
   check("content_reports_target_check", sql`${table.recipeId} is not null or ${table.tipId} is not null`),
 ]);
@@ -317,7 +317,7 @@ export const ingredientAliases = pgTable("ingredient_aliases", {
 }, (table) => [
   index("ingredient_aliases_ingredient_id_idx").on(table.ingredientId),
   uniqueIndex("ingredient_aliases_alias_lower_uidx").on(sql`lower(${table.alias})`),
-  foreignKey({ name: "ingredient_aliases_ingredient_id_fkey", columns: [table.ingredientId], foreignColumns: [ingredients.id], onDelete: "cascade" }),
+  foreignKey({ name: "ingredient_aliases_ingredient_id_fkey", columns: [table.ingredientId], foreignColumns: [ingredients.id]}),
 ]);
 
 export const recipeImages = pgTable("recipe_images", {
@@ -333,8 +333,8 @@ export const recipeImages = pgTable("recipe_images", {
 }, (table) => [
   index("recipe_images_recipe_id_idx").on(table.recipeId),
   index("recipe_images_image_id_idx").on(table.imageId),
-  foreignKey({ name: "recipe_images_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
-  foreignKey({ name: "recipe_images_image_id_fkey", columns: [table.imageId], foreignColumns: [images.id], onDelete: "set null" }),
+  foreignKey({ name: "recipe_images_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id]}),
+  foreignKey({ name: "recipe_images_image_id_fkey", columns: [table.imageId], foreignColumns: [images.id]}),
 ]);
 
 export const recipeIngredients = pgTable("recipe_ingredients", {
@@ -355,7 +355,7 @@ export const recipeIngredients = pgTable("recipe_ingredients", {
   index("recipe_ingredients_recipe_id_idx").on(table.recipeId),
   index("recipe_ingredients_ingredient_id_idx").on(table.ingredientId),
   index("recipe_ingredients_sort_order_idx").on(table.recipeId, table.sortOrder),
-  foreignKey({ name: "recipe_ingredients_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
+  foreignKey({ name: "recipe_ingredients_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id]}),
   foreignKey({ name: "recipe_ingredients_ingredient_id_fkey", columns: [table.ingredientId], foreignColumns: [ingredients.id] }),
 ]);
 
@@ -366,8 +366,8 @@ export const recipeTags = pgTable("recipe_tags", {
 }, (table) => [
   primaryKey({ name: "recipe_tags_pkey", columns: [table.recipeId, table.tagId] }),
   index("idx_recipe_tags_tag_id").on(table.tagId),
-  foreignKey({ name: "recipe_tags_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id], onDelete: "cascade" }),
-  foreignKey({ name: "recipe_tags_tag_id_fkey", columns: [table.tagId], foreignColumns: [tags.id], onDelete: "cascade" }),
+  foreignKey({ name: "recipe_tags_recipe_id_fkey", columns: [table.recipeId], foreignColumns: [recipes.id]}),
+  foreignKey({ name: "recipe_tags_tag_id_fkey", columns: [table.tagId], foreignColumns: [tags.id]}),
 ]);
 
 export type Category = typeof categories.$inferSelect;
