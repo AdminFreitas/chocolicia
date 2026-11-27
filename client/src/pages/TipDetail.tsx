@@ -105,7 +105,7 @@ export default function TipDetail() {
         <section className="mx-auto max-w-4xl px-4 py-8 md:px-6 md:py-12 lg:px-8" aria-label="Conteúdo da dica">
           <a href="/dicas" className="inline-flex items-center gap-2 text-sm font-semibold text-[#8A5A44] hover:text-[#5A3428]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Todas as dicas</a>
           <header className="mt-7">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#8A5A44]"><span>{item.topicName || "Dica"}</span>{date && <><span aria-hidden="true">·</span><time dateTime={tip.publishedAt ?? undefined}>{date}</time></>}</div>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#8A5A44]"><span>{item.topicName || "Dica"}</span>{date && <><span aria-hidden="true">·</span><time dateTime={tip.publishedAt ?? undefined}>{date}</time></>}{item.authorName && <><span aria-hidden="true">·</span><span>{item.authorName}</span></>}</div>
             <h1 className="mt-3 font-display text-4xl leading-tight text-[#5A3428] md:text-5xl">{tip.title}</h1>
             {tip.excerpt && <p className="mt-4 max-w-3xl text-lg leading-8 text-[#8A5A44]">{tip.excerpt}</p>}
           </header>
