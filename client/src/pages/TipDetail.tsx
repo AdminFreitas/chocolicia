@@ -102,7 +102,7 @@ export default function TipDetail() {
       <RecipePageMeta title={tip.metaTitle || tip.title} description={tip.metaDescription || tip.excerpt || "Dicas práticas de confeitaria e preparo da Chocolícia."} path={path} image={tip.coverImageUrl || undefined} />
       <BreadcrumbSchema items={[{ name: "Início", url: SITE.url }, { name: "Dicas", url: `${SITE.url}/dicas` }, { name: tip.title, url: `${SITE.url}${path}` }]} />
       <main>
-        <article className="mx-auto max-w-4xl px-4 py-8 md:px-6 md:py-12 lg:px-8">
+        <section className="mx-auto max-w-4xl px-4 py-8 md:px-6 md:py-12 lg:px-8" aria-label="Conteúdo da dica">
           <a href="/dicas" className="inline-flex items-center gap-2 text-sm font-semibold text-[#8A5A44] hover:text-[#5A3428]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Todas as dicas</a>
           <header className="mt-7">
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#8A5A44]"><span>{item.topicName || "Dica"}</span>{date && <><span aria-hidden="true">·</span><time dateTime={tip.publishedAt ?? undefined}>{date}</time></>}</div>
@@ -114,7 +114,7 @@ export default function TipDetail() {
           {item.images?.filter((image) => image.imageUrl).map((image, index) => <figure key={`${image.imageId || image.imageUrl}-${index}`} className="mx-auto mt-8 max-w-3xl"><img src={image.imageUrl!} alt={image.altText || tip.title} loading="lazy" className="w-full rounded-2xl object-cover" />{image.caption && <figcaption className="mt-2 text-center text-xs text-[#8A5A44]">{image.caption}</figcaption>}</figure>)}
           {item.relatedTags?.length > 0 && <div className="mx-auto mt-8 flex max-w-3xl flex-wrap gap-2">{item.relatedTags.map((tag) => <span key={tag.slug} className="rounded-full border border-[#D9A83E]/40 px-3 py-1 text-xs text-[#8A5A44]">{tag.name}</span>)}</div>}
           <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-[#D9A83E]/30 bg-[#F3E5D0]/45 p-6 text-center"><p className="font-display text-2xl text-[#5A3428]">Gostou da dica?</p><p className="mt-2 text-sm leading-6 text-[#8A5A44]">Explore mais conteúdos práticos para suas criações.</p><a href="/dicas" className="button-gold mt-4 inline-flex">Mais dicas</a></div>
-        </article>
+        </section>
       </main>
     </RecipeSiteChrome>
   );
