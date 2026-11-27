@@ -22,6 +22,8 @@ export type TipListItem = {
   tip: TipRecord;
   topicName: string | null;
   topicSlug: string | null;
+  authorName: string | null;
+  authorSlug: string | null;
 };
 
 export type TipImage = {
