@@ -40,10 +40,15 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
   const topic = topicRows[0];
   if (!topic) throw new TipPersistenceError("topic_not_found", `Não existe tópico ativo com slug "${input.topicSlug}". Cadastre o tópico de referência antes de enviar a dica.`, 422);
 
+  let authorId = input.authorId ?? null;
   if (input.authorId != null) {
     const authorRows = await db.select({ id: authors.id }).from(authors)
       .where(and(eq(authors.id, input.authorId), eq(authors.active, true))).limit(1);
     if (!authorRows[0]) throw new TipPersistenceError("author_not_found", "O autor informado não existe ou está inativo.", 422);
+  } else {
+    const defaultAuthors = await db.select({ id: authors.id }).from(authors)
+      .where(and(eq(authors.slug, "equipe-chocolicia"), eq(authors.active, true))).limit(1);
+    authorId = defaultAuthors[0]?.id ?? null;
   }
 
   const tagRows = input.tags.length
@@ -75,7 +80,7 @@ export async function createTipIdempotently(input: TipInput & { slug: string }) 
       content: input.content,
       tipType: input.tipType,
       topicId: topic.id,
-      authorId: input.authorId ?? null,
+      authorId,
       coverImageUrl: input.coverImageUrl ?? null,
       coverImageAlt: input.coverImageAlt ?? null,
       metaTitle: input.metaTitle ?? null,
@@ -127,6 +132,7 @@ const publicTipSelection = {
   content: tips.content,
   tipType: tips.tipType,
   topicId: tips.topicId,
+  authorId: tips.authorId,
   coverImageUrl: tips.coverImageUrl,
   coverImageAlt: tips.coverImageAlt,
   metaTitle: tips.metaTitle,
@@ -146,8 +152,11 @@ export async function listPublishedTips(limit = 20) {
     tip: publicTipSelection,
     topicName: tipTopics.name,
     topicSlug: tipTopics.slug,
+    authorName: authors.name,
+    authorSlug: authors.slug,
   }).from(tips)
     .leftJoin(tipTopics, eq(tips.topicId, tipTopics.id))
+    .leftJoin(authors, eq(tips.authorId, authors.id))
     .where(and(eq(tips.status, "published"), eq(tips.reviewStatus, "approved"), isNotNull(tips.publishedAt)))
     .orderBy(desc(tips.publishedAt), desc(tips.id))
     .limit(Math.min(Math.max(limit, 1), 50));
