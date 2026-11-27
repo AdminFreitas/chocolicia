@@ -85,7 +85,7 @@ function tipJsonLd(item: PublishedTip) {
       "@type": "CreativeWork",
       name: tip.title,
       text: tip.content,
-      author: { "@type": "Organization", name: "Chocolícia" },
+      author: { "@type": "Organization", name: item.authorName || "Chocolícia" },
     },
   };
 }
@@ -104,7 +104,7 @@ function tipBody(item: PublishedTip) {
   return `<main id="tip-prerender" class="tip-prerender" lang="pt-BR">
     <div><p>${escapeHtml(topicName || "Dica")}</p><h1>${escapeHtml(tip.title)}</h1>
     <p>${escapeHtml(tip.excerpt || "")}</p>
-    <p>Publicado em ${publishedDate(tip.publishedAt)}</p>
+    <p>Publicado em ${publishedDate(tip.publishedAt)}${item.authorName ? ` · ${escapeHtml(item.authorName)}` : ""}</p>
     ${cover}<div class="tip-prerender-content">${markdownToHtml(tip.content)}</div>
     ${relatedImages}${tags}<p><a href="/dicas">Ver todas as dicas da Chocolícia</a></p></div></main>`;
 }
