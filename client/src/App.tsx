@@ -32,12 +32,16 @@ function RecipeDetailRoute() {
   return <Suspense fallback={<RecipeRouteFallback detail />}><RecipeDetail /></Suspense>;
 }
 
+function TipRouteFallback() {
+  return <div className="flex min-h-[55vh] items-center justify-center bg-[#FFF9F0] px-4 text-[#8A5A44]" role="status">Carregando dica...</div>;
+}
+
 function TipsRoute() {
-  return <Suspense fallback={<RecipeRouteFallback />}><Tips /></Suspense>;
+  return <Suspense fallback={<TipRouteFallback />}><Tips /></Suspense>;
 }
 
 function TipDetailRoute() {
-  return <Suspense fallback={<RecipeRouteFallback detail />}><TipDetail /></Suspense>;
+  return <Suspense fallback={<TipRouteFallback />}><TipDetail /></Suspense>;
 }
 
 function Router() {
