@@ -51,7 +51,7 @@ const app = (
 
 // O HTML de detalhe dinâmico é uma versão SEO estática; a aplicação React substitui-o após carregar.
 // Nas páginas pré-renderizadas de build, hydrateRoot preserva a marcação existente.
-if (rootElement.dataset.recipePrerendered === "true") {
+if (rootElement.dataset.recipePrerendered === "true" || rootElement.dataset.tipPrerendered === "true") {
   createRoot(rootElement).render(app);
 } else if (rootElement.hasChildNodes()) {
   hydrateRoot(rootElement, app);
