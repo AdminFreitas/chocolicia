@@ -153,6 +153,15 @@ export async function listPublishedTips(limit = 20) {
     .limit(Math.min(Math.max(limit, 1), 50));
 }
 
+export async function getPublishedTipSlugs() {
+  const db = await getDb();
+  if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
+  return db.select({ slug: tips.slug, updatedAt: tips.updatedAt })
+    .from(tips)
+    .where(and(eq(tips.status, "published"), eq(tips.reviewStatus, "approved"), isNotNull(tips.publishedAt)))
+    .orderBy(desc(tips.publishedAt));
+}
+
 export async function getPublishedTipBySlug(slug: string) {
   const db = await getDb();
   if (!db) throw new TipPersistenceError("database_unavailable", "Banco de dados indisponível.", 503);
