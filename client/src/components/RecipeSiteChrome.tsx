@@ -23,8 +23,8 @@ export default function RecipeSiteChrome({ children, section = "recipes" }: Prop
       <Dock
         items={[
           { icon: <House size={18} aria-hidden="true" />, label: "Início", onClick: () => navigate("/") },
-          { icon: <BookOpen size={18} aria-hidden="true" />, label: "Receitas", onClick: () => navigate("/receitas") },
-          { icon: <Lightbulb size={18} aria-hidden="true" />, label: "Dicas", onClick: () => navigate("/dicas") },
+          { icon: <BookOpen size={18} aria-hidden="true" />, label: section === "recipes" ? "Receitas (atual)" : "Receitas", onClick: () => navigate("/receitas") },
+          { icon: <Lightbulb size={18} aria-hidden="true" />, label: section === "tips" ? "Dicas (atual)" : "Dicas", onClick: () => navigate("/dicas") },
           { icon: <MessageCircle size={18} aria-hidden="true" />, label: "Contato", onClick: () => window.open(WA_ORCAMENTO, "_blank", "noopener,noreferrer") },
         ]}
         panelHeight={68}
