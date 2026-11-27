@@ -83,7 +83,7 @@ export function createTipsRouter() {
   });
 
   router.post("/", async (req, res) => {
-    const expected = process.env.TIPS_AGENT_TOKEN;
+    const expected = process.env.TIPS_AGENT_TOKEN ?? process.env.RECIPES_AGENT_TOKEN;
     if (!expected) {
       res.status(503).json({ error: "A API de dicas não está configurada.", code: "tips_api_unconfigured" });
       return;
